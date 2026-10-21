@@ -40,7 +40,7 @@ python -m chessscan.prepare_chesscog --raw data/raw/extracted --out data/prepare
 ## 2. Datos reales propios (autoetiquetado)
 
 1. Armá una posición conocida en tu tablero (la inicial sirve; mejor varias posiciones con todas las piezas en distintas casillas, por ejemplo cargadas desde un FEN).
-2. Filmá 20–40 s moviendo el teléfono despacio alrededor del tablero, desde distintos ángulos y alturas, con distintas luces. Que se vean siempre las 4 esquinas del área de juego.
+2. Filmá 20–40 s moviendo el teléfono despacio alrededor del tablero, desde distintos ángulos y alturas, con distintas luces. Que se vean siempre las 4 esquinas del área de juego. Se puede dar la vuelta al tablero: la herramienta reordena las esquinas y rota las etiquetas en cada fotograma.
 3. Corré:
 
 ```bash
@@ -48,7 +48,7 @@ python -m chessscan.autolabel mi_video.mp4 --out data/real/tablero1_inicial \
     --fen "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR" --a1 BL
 ```
 
-Se abre el primer fotograma: hacé clic en las 4 esquinas del área de juego en orden lejana‑izquierda, lejana‑derecha, cercana‑derecha, cercana‑izquierda. `--a1` dice dónde quedó a1 en la imagen: `BL` si las blancas están del lado de la cámara, `TR` si están enfrente, `TL`/`BR` si están a la izquierda/derecha. El resto de los fotogramas se sigue solo (SIFT + homografía); se descartan los movidos o con el tablero fuera de cuadro. **Mirá `preview.jpg`**: la retícula verde tiene que calzar con las casillas y las letras tienen que estar sobre las piezas correctas. Si no calza, descartá esa carpeta.
+Se abre el primer fotograma: hacé clic en las 4 esquinas del área de juego en orden lejana‑izquierda, lejana‑derecha, cercana‑derecha, cercana‑izquierda. `--a1` dice dónde quedó a1 en el **primer fotograma**: `BL` si las blancas están del lado de la cámara, `TR` si están enfrente, `TL`/`BR` si están a la izquierda/derecha. El resto de los fotogramas se sigue solo (SIFT + homografía); se descartan los movidos o con el tablero fuera de cuadro. **Mirá `preview.jpg`**: la retícula verde tiene que calzar con las casillas y las letras tienen que estar sobre las piezas correctas. Si no calza, descartá esa carpeta.
 
 Fotos sueltas con FEN conocido: anotá las esquinas en un JSON (ver `eval_annotations/`) y usá `python -m chessscan.prepare_real`. `chessscan.corners.refine` ajusta esquinas aproximadas a los bordes de las casillas.
 

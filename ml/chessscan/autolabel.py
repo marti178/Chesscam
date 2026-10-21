@@ -8,6 +8,9 @@ fotograma se etiquetan solas. Solo hace falta ubicar el tablero en cada fotogram
    de CONTRACT §1 (TL→TR = borde lejano a la cámara).
 2. En los siguientes se siguen con SIFT + homografía RANSAC contra un fotograma
    clave (el plano del tablero domina; las piezas quedan como outliers).
+   Si se camina alrededor del tablero, en cada fotograma se reordenan las
+   esquinas para que TL→TR siga siendo el borde de arriba (lejano) y la
+   cuadrícula de etiquetas se rota igual.
 3. Se descartan fotogramas movidos, con pocas correspondencias o con el tablero
    fuera de cuadro, y se guarda uno cada `--every`.
 
@@ -102,6 +105,13 @@ def corners_ok(corners: np.ndarray, shape, min_side: float = 120) -> bool:
     return bool((cross > 0).all())
 
 
+def upright(corners: np.ndarray, labels0: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Rota el orden de las esquinas seguidas para que queden TL, TR, BR, BL en esta
+    imagen, y rota las etiquetas del primer fotograma en consecuencia."""
+    k = int(np.argmin(np.linalg.norm(corners - g.sort_corners(corners)[0], axis=1)))
+    return np.roll(corners, -k, axis=0), np.rot90(labels0.reshape(8, 8), k).reshape(64)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("video", type=Path)
@@ -139,6 +149,7 @@ def main() -> None:
 
     tracker = Tracker(cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY), corners)
     canons, names, all_corners = [g.warp(rgb, g.homography(corners))], ["f000000"], [corners.tolist()]
+    all_labels = [labels]
     idx, good, stats = 0, 0, {"leidos": 1, "sin_seguimiento": 0, "fuera_de_cuadro": 0, "movidos": 0}
     while len(canons) < a.max_frames:
         ok, frame = cap.read()
@@ -152,6 +163,7 @@ def main() -> None:
         if c is None:
             stats["sin_seguimiento"] += 1
             continue
+        c, lab = upright(c, labels)
         if not corners_ok(c, rgb.shape):
             stats["fuera_de_cuadro"] += 1
             continue
@@ -166,11 +178,13 @@ def main() -> None:
         canons.append(canon)
         names.append(f"f{idx:06d}")
         all_corners.append(c.tolist())
+        all_labels.append(lab)
 
     a.out.mkdir(parents=True, exist_ok=True)
     canon_arr = np.stack(canons)
     np.save(a.out / "canon.npy", canon_arr)
-    np.save(a.out / "labels.npy", np.tile(labels, (len(canons), 1)))
+    label_arr = np.stack(all_labels)
+    np.save(a.out / "labels.npy", label_arr)
     (a.out / "names.txt").write_text("\n".join(names) + "\n")
     (a.out / "corners.json").write_text(json.dumps({
         "video": str(a.video), "fen": a.fen, "a1": a.a1, "frames": dict(zip(names, all_corners)),
@@ -186,7 +200,7 @@ def main() -> None:
             cv2.line(t, (g.MX, g.MY + g.S * k), (g.MX + 8 * g.S, g.MY + g.S * k), (0, 255, 0), 1)
         for r in range(8):
             for col in range(8):
-                lab = g.CLASSES[labels[r * 8 + col]]
+                lab = g.CLASSES[label_arr[i][r * 8 + col]]
                 if lab != "empty":
                     cv2.putText(t, lab, (g.MX + g.S * col + 10, g.MY + g.S * r + 22),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
