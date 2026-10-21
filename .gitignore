@@ -1,0 +1,13 @@
+referencias/
+Dynamic-Chess-Board-Piece-Extraction/
+.idea/
+*.iml
+.gradle/
+build/
+local.properties
+__pycache__/
+.venv/
+ml/data/
+ml/runs/
+*.apk
+!android/release/*.apk
