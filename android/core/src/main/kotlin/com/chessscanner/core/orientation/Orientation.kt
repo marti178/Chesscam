@@ -71,11 +71,11 @@ object Orientation {
     }
 
     /**
-     * Elige la rotación (SPEC «Orientación»): a1 oscura deja 2 candidatas; entre ellas gana la que
-     * deja más piezas blancas en las filas 1–2 y negras en las 7–8. Si la diferencia es chica, o no se
-     * pudo saber cuáles casillas son oscuras, se marca dudosa.
+     * Elige la rotación (SPEC «Orientación»): a1 oscura deja 2 candidatas; entre ellas gana la de
+     * mejor [score]. Si la diferencia es chica, o no se pudo saber cuáles casillas son oscuras, se
+     * marca dudosa.
      */
-    fun resolve(grid: Array<Piece>, darkParity: Int?, minMargin: Int = 3): OrientationResult {
+    fun resolve(grid: Array<Piece>, darkParity: Int?, minMargin: Double = 3.0): OrientationResult {
         val candidates = (0..3).filter { darkParity == null || GridMapping.a1Parity(it) == darkParity }
         val scored = candidates.map { it to score(grid, it) }.sortedByDescending { it.second }
         val (best, bestScore) = scored[0]
@@ -88,18 +88,33 @@ object Orientation {
         return OrientationResult(best, reason != null, reason)
     }
 
-    /** Piezas blancas en filas 1–2 y negras en 7–8 suman; al revés restan. */
-    fun score(grid: Array<Piece>, rotation: Int): Int {
-        var s = 0
+    /**
+     * Puntaje de una rotación (más alto = más creíble). Combina:
+     *  - la regla de la SPEC: blancas en filas 1–2 y negras en 7–8 suman, al revés restan (×2);
+     *  - la fila media de cada color (las blancas tienden a estar más abajo), peones con peso doble;
+     *  - peones enfrentados en la misma columna: el blanco tiene que estar debajo del negro (×2).
+     *    Es lo que más ayuda en finales, donde casi no quedan piezas en las filas de los extremos.
+     */
+    fun score(grid: Array<Piece>, rotation: Int): Double {
+        var spec = 0
+        var ranks = 0.0
+        val whitePawns = ArrayList<Int>()
+        val blackPawns = ArrayList<Int>()
         for (i in 0 until 64) {
             val p = grid[i]
             val white = p.isWhite ?: continue
-            val rank = GridMapping.square(i / 8, i % 8, rotation) / 8
-            val near = rank <= 1
-            val far = rank >= 6
-            if (near) s += if (white) 1 else -1
-            if (far) s += if (white) -1 else 1
+            val sq = GridMapping.square(i / 8, i % 8, rotation)
+            val rank = sq / 8
+            if (rank <= 1) spec += if (white) 1 else -1
+            if (rank >= 6) spec += if (white) -1 else 1
+            val pawn = p == Piece.WP || p == Piece.BP
+            val r = (if (white) 3.5 - rank else rank - 3.5) / 3.5
+            ranks += if (pawn) 2 * r else r
+            if (p == Piece.WP) whitePawns += sq
+            if (p == Piece.BP) blackPawns += sq
         }
-        return s
+        var files = 0
+        for (w in whitePawns) for (b in blackPawns) if (w % 8 == b % 8) files += if (w / 8 < b / 8) 1 else -1
+        return 2.0 * spec + ranks + 2.0 * files
     }
 }

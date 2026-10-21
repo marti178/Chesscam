@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Damero de 4x4 dentro de la zona segura del ícono adaptativo. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFF0E6C8" android:pathData="M30,30h48v48h-48z" />
+    <path android:fillColor="#FF7A4E2D"
+        android:pathData="M42,30h12v12h-12z M66,30h12v12h-12z M30,42h12v12h-12z M54,42h12v12h-12z M42,54h12v12h-12z M66,54h12v12h-12z M30,66h12v12h-12z M54,66h12v12h-12z" />
+</vector>

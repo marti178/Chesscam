@@ -10,7 +10,9 @@ camerax = "1.6.2"
 opencv = "4.12.0"
 # OpenCV de escritorio (con nativos para Windows/Linux/macOS) solo para tests y la herramienta de evaluación.
 opencvDesktop = "4.9.0-0"
-litert = "2.3.0"
+# 1.4.x: runtime clásico (Interpreter + XNNPACK) sin dependencias. La 2.x trae Play AI Delivery,
+# WorkManager y Room, y agrega permisos de servicio en primer plano que la SPEC no permite.
+litert = "1.4.2"
 junit = "4.13.2"
 
 [libraries]

@@ -62,6 +62,16 @@ class OrientationTest {
         assertTrue(Orientation.resolve(grid, 0).rotation in listOf(1, 3))
     }
 
+    @Test fun endgamePawnsDecideWhenBackRanksAreEmpty() {
+        // Caso de ml/golden: final con un alfil negro en c1, que engaña a la regla de filas 1–2 / 7–8.
+        val b = Fen.parse("8/8/2Pk1p1p/p2B4/P4PP1/6K1/8/2b5").board
+        for (rot in 0..3) {
+            val r = Orientation.resolve(gridOf(b, rot), GridMapping.a1Parity(rot))
+            assertEquals(rot, r.rotation)
+            assertFalse(r.doubtful)
+        }
+    }
+
     @Test fun fewPiecesIsDoubtful() {
         val b = Fen.parse("8/8/3k4/8/8/4K3/8/8").board
         val r = Orientation.resolve(gridOf(b, 0), 1)
