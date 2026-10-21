@@ -1,0 +1,8 @@
+# Versiones fijadas (Python 3.11). Lista completa congelada en requirements-lock.txt.
+tensorflow==2.19.1
+numpy==2.1.3
+opencv-python-headless==4.12.0.88
+chess==1.11.2
+tqdm==4.67.1
+pytest==8.3.4
+matplotlib==3.9.4

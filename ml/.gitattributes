@@ -1,0 +1,4 @@
+*.bin binary
+*.png binary
+*.tflite binary
+*.npy binary
