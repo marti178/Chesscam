@@ -160,6 +160,8 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=10)
     ap.add_argument("--limit-train", type=int, default=0, help="usar solo N tableros (pruebas)")
     ap.add_argument("--eval-only", action="store_true", help="saltear el entrenamiento y usar run/model.keras")
+    ap.add_argument("--init", type=Path, help="ajuste fino: partir de este model.keras en vez de ImageNet")
+    ap.add_argument("--eval-real", type=Path, nargs="*", default=[], help="datos reales preparados para evaluar")
     a = ap.parse_args()
 
     a.run.mkdir(parents=True, exist_ok=True)
@@ -178,7 +180,7 @@ def main() -> None:
     xv, yv = all_crops(val)
 
     if not a.eval_only:
-        model = build_model(a.arch)
+        model = keras.models.load_model(a.init) if a.init else build_model(a.arch)
         sched = keras.optimizers.schedules.CosineDecay(
             1e-5, a.epochs * a.steps, warmup_target=a.lr, warmup_steps=min(500, a.steps))
         model.compile(
@@ -210,11 +212,17 @@ def main() -> None:
     res = {"temperature": T, "keras": {"val": metrics(predict_logits(predict, xv), yv),
                                        "test": metrics(predict_logits(predict, xt), yt)}}
     print("keras test square_acc", res["keras"]["test"]["square_acc"])
+    real = {str(d): all_crops(Boards.load(d)) for d in a.eval_real}
+    for d, (xr, yr) in real.items():
+        res["keras"][d] = metrics(predict_logits(predict, xr), yr)
+        print("keras", d, res["keras"][d]["square_acc"])
 
     for mode in ["fp32", "fp16", "int8"]:
         p = export_tflite(model, a.run, xv[: 64 * 40], mode)
         lt = tflite_predict(p, xt)
         res[f"tflite_{mode}"] = {"bytes": p.stat().st_size, "test": metrics(lt, yt)}
+        for d, (xr, yr) in real.items():
+            res[f"tflite_{mode}"][d] = metrics(tflite_predict(p, xr), yr)
         print(mode, p.stat().st_size, res[f"tflite_{mode}"]["test"]["square_acc"])
     (a.run / "labels.txt").write_text("\n".join(g.CLASSES) + "\n")
     (a.run / "metrics.json").write_text(json.dumps(res, indent=1))
