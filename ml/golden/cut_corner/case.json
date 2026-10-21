@@ -1,0 +1,202 @@
+{
+ "contract_version": 1,
+ "image_size_wh": [
+  900,
+  800
+ ],
+ "corners_TL_TR_BR_BL": [
+  [
+   50.0,
+   237.0
+  ],
+  [
+   505.0,
+   216.0
+  ],
+  [
+   701.0,
+   627.0
+  ],
+  [
+   -59.0,
+   686.0
+  ]
+ ],
+ "H_row_major": [
+  [
+   0.8693774835683875,
+   0.28925827975493407,
+   -61.48823503463986
+  ],
+  [
+   0.07122726882514537,
+   1.7779635295738407,
+   -273.33416561316085
+  ],
+  [
+   -4.174050703470604e-08,
+   0.0024439501886221186,
+   1.0
+  ]
+ ],
+ "constants": {
+  "S": 32,
+  "MX": 32,
+  "MY": 96,
+  "CW": 320,
+  "CH": 352,
+  "CROP_H": 128,
+  "CROP_W": 64
+ },
+ "row_bounds_y0_y1": [
+  [
+   0,
+   128
+  ],
+  [
+   42,
+   160
+  ],
+  [
+   83,
+   192
+  ],
+  [
+   124,
+   224
+  ],
+  [
+   165,
+   256
+  ],
+  [
+   206,
+   288
+  ],
+  [
+   247,
+   320
+  ],
+  [
+   288,
+   352
+  ]
+ ],
+ "col_bounds_x0_x1": [
+  [
+   0,
+   64
+  ],
+  [
+   40,
+   96
+  ],
+  [
+   80,
+   128
+  ],
+  [
+   120,
+   160
+  ],
+  [
+   160,
+   200
+  ],
+  [
+   192,
+   240
+  ],
+  [
+   224,
+   280
+  ],
+  [
+   256,
+   320
+  ]
+ ],
+ "classes": [
+  "empty",
+  "P",
+  "N",
+  "B",
+  "R",
+  "Q",
+  "K",
+  "p",
+  "n",
+  "b",
+  "r",
+  "q",
+  "k"
+ ],
+ "fen": "8/8/2Pk1p1p/p2B4/P4PP1/6K1/8/2b5",
+ "a1_corner": "TR",
+ "true_labels": [
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "b",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "K",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "P",
+  "P",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "P",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "B",
+  "empty",
+  "empty",
+  "p",
+  "p",
+  "empty",
+  "p",
+  "empty",
+  "k",
+  "P",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty"
+ ]
+}

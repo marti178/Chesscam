@@ -160,7 +160,7 @@ Cada caso `ml/golden/<caso>/` trae:
 | `case.json` | esquinas `[[x,y]×4]` en orden TL, TR, BR, BL; la homografía `H` (3×3, fila mayor); constantes; FEN de la imagen si se conoce; top‑1 esperado por casilla |
 | `canonical.png` | imagen canónica esperada (320×352) |
 | `crops/r{fila}c{col}.png` | los 64 recortes esperados (64×128) |
-| `input_f32.bin` | tensor de entrada `[64,128,64,3]` float32 little‑endian, sin cabecera |
+| `input_u8.bin` | tensor de entrada `[64,128,64,3]` como uint8 crudo, sin cabecera (el tensor float32 que entra al modelo es exactamente estos valores convertidos a float; se guarda en uint8 para no subir 6 MB por caso) |
 | `output_logits_f32.bin` | salida esperada del `.tflite` entregado, `[64,13]` float32 little‑endian |
 
 Tolerancias para el port:
