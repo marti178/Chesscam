@@ -112,9 +112,32 @@ private fun LiveScreen(viewModel: ScannerViewModel, live: LiveUi) {
                     modifier = Modifier.fillMaxWidth().height(64.dp),
                     enabled = live.hasFusion,
                 ) { Text("Congelar", fontSize = 20.sp, fontWeight = FontWeight.Bold) }
+                CreditsButton()
             }
         }
     }
+}
+
+/** Créditos y atribuciones (la del dataset CC BY 4.0 es obligatoria al distribuir el modelo). */
+@Composable
+private fun CreditsButton() {
+    var open by remember { mutableStateOf(false) }
+    TextButton(onClick = { open = true }, Modifier.fillMaxWidth()) { Text("Créditos", fontSize = 13.sp) }
+    if (open) AlertDialog(
+        onDismissRequest = { open = false },
+        title = { Text("Créditos") },
+        text = {
+            Text(
+                "El clasificador de piezas fue entrenado con «Dataset of Rendered Chess Game State Images» de " +
+                    "Georg Wölflein y Ognjen Arandjelović (2021), https://osf.io/xf3ka/, licencia CC BY 4.0, " +
+                    "a partir de pesos de MobileNetV3 (ImageNet, Apache 2.0).\n\n" +
+                    "El recorte de casillas sigue la idea de chesscog (Wölflein y Arandjelović, MIT).\n\n" +
+                    "Usa OpenCV, LiteRT, CameraX y Jetpack Compose (Apache 2.0). Todo se procesa en el teléfono, sin conexión.",
+                fontSize = 14.sp,
+            )
+        },
+        confirmButton = { TextButton({ open = false }) { Text("Cerrar") } },
+    )
 }
 
 @Composable

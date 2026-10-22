@@ -13,5 +13,16 @@ Dependencias que van dentro del APK o se usan para compilar/probar `android/`. (
 | JUnit | 4.13.2 | EPL 1.0 | solo tests |
 | Android Gradle Plugin, Gradle | 9.4.1 / 9.8.2 | Apache 2.0 | compilación |
 
+## Modelo dentro del APK
+
+`app/src/main/assets/chess_square_classifier.tflite` (de `ml/export/`, ver `ml/LICENSES.md`): derivado de pesos
+MobileNetV3‑Small de ImageNet (Apache 2.0), entrenado con datos CC BY 4.0. Atribución obligatoria, que la app
+muestra en «Créditos»:
+
+> Entrenado con «Dataset of Rendered Chess Game State Images» de Georg Wölflein y Ognjen Arandjelović (2021),
+> https://osf.io/xf3ka/, CC BY 4.0.
+
+Los vectores dorados (render derivado del mismo dataset) van solo en el APK de test, y solo si se pasa `-PgoldenDir`.
+
 El detector de tablero está inspirado en el de chesscog (Wölflein y Arandjelović, 2021, MIT); el código es propio.
 Las imágenes de `Dynamic-Chess-Board-Piece-Extraction/test-images` no tienen licencia: se usan solo localmente y no se commitean.

@@ -3,10 +3,10 @@
 Implementación de la parte Android de [`SPEC.md`](../SPEC.md): cámara en vivo → tablero → 64 casillas →
 clasificador → fusión temporal → orientación → FEN → Lichess. Todo offline; el único permiso es `CAMERA`.
 
-> **Estado (21‑10‑2026):** compila, tests verdes, APK debug generado. **No se probó en un teléfono**
-> (no había ninguno conectado): no hay medición de latencia, fps ni temperatura, y nada de lo que
-> sigue garantiza que la app funcione bien en un dispositivo real. Todavía no hay modelo `.tflite`:
-> la app usa un clasificador de prueba y lo avisa en pantalla.
+> **Estado (22‑10‑2026):** compila, tests verdes, APK debug generado con el modelo v1 de `ml/`.
+> **No se probó en un teléfono** (no había ninguno conectado): no hay medición de latencia, fps ni
+> temperatura, y no se corrió el test instrumentado que compara los logits del modelo en Android con
+> los vectores dorados. Nada de lo que sigue garantiza que la app funcione bien en un dispositivo real.
 
 ## Estructura
 
@@ -85,11 +85,23 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Modelo
 
-`LiteRtSquareClassifier` carga `app/src/main/assets/chess_square_classifier.tflite` (sin comprimir en el APK).
-Si no está, o si sus tensores no tienen las formas del contrato, se usa `FakeSquareClassifier`
-(mira solo la textura de la casilla: vacía / «peón» claro / «peón» oscuro) y la pantalla dice
-«Sin modelo: clasificador de prueba». Para integrar el modelo: copiar `ml/export/chess_square_classifier.tflite`
-a `app/src/main/assets/` y recompilar.
+`app/src/main/assets/chess_square_classifier.tflite` + `labels.txt` son el modelo v1 de la rama
+`claude/ml-modelo-de93a1` (commit c5a677b, fp16, 1,9 MB; SHA‑256 `e88d238c…c6aebd`, igual a `ml/export/SHA256SUMS`).
+`LiteRtSquareClassifier` lo carga sin comprimir y comprueba que `labels.txt` tenga el orden de clases del contrato
+y que los tensores sean `[64,128,64,3]` → `[64,13]`. Si algo falla usa `FakeSquareClassifier` (solo textura:
+vacía / «peón» claro / «peón» oscuro) y la pantalla dice «Sin modelo: clasificador de prueba».
+Para actualizarlo: copiar `ml/export/chess_square_classifier.tflite` y `labels.txt` a `app/src/main/assets/`.
+
+Según `ml/RESULTS.md`: 99,3 % por casilla en test sintético pero **83 % en fotos reales** (vacía/ocupada > 99 %;
+el tipo de pieza es flojo hasta reentrenar con datos del tablero del usuario). La atribución CC BY 4.0 del
+dataset está en la app (botón «Créditos»).
+
+Test instrumentado (necesita teléfono o emulador): compara la salida del modelo en Android con
+`output_logits_f32.bin` (mismo argmax en las 64 casillas, |Δlogit| ≤ 0,1), desde `input_u8.bin` y también por el
+camino completo PNG → recorte con OpenCV Android → modelo. Los vectores van solo en el APK de test:
+```bash
+./gradlew connectedDebugAndroidTest -PgoldenDir=<ruta a ml/golden>
+```
 
 ## Resultados medidos (en la PC)
 
@@ -105,7 +117,8 @@ a `app/src/main/assets/` y recompilar.
 ## Limitaciones conocidas
 
 - **No probado en dispositivo.** Latencia, fps, temperatura y la alineación de la retícula sobre la vista previa no están verificados.
-- **Clasificador falso** hasta que esté el `.tflite`; no reconoce piezas. Falta la verificación de las salidas del modelo contra `output_logits_f32.bin` (requiere el modelo y un dispositivo o emulador: los logits los produce LiteRT en Android).
+- **Modelo v1 flojo en piezas reales** (83 % por casilla en fotos reales, según ML). La confianza está calibrada con datos sintéticos, así que «Posición lista» puede aparecer con piezas mal clasificadas: conviene revisar siempre al congelar.
+- **Test instrumentado de logits sin correr** (no hubo dispositivo): no está verificado que LiteRT en el teléfono dé los mismos logits que la referencia.
 - Umbrales del control de calidad (nitidez 40, tamaño 35 % del lado menor, ángulo 0,45, movimiento 0,25 casillas/fotograma) puestos a ojo; hay que ajustarlos con fotogramas reales del teléfono.
 - La retícula se dibuja suponiendo que la vista previa (`FIT_CENTER`) y el análisis 4:3 tienen el mismo campo visual; en algunos teléfonos puede quedar corrida unos píxeles.
 - El detector necesita ver una buena parte de las líneas del damero; tableros sin contraste entre casillas, muy tapados o muy de costado (cociente de lados < 0,45) no se detectan o se rechazan.

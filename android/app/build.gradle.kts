@@ -13,6 +13,7 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             // Teléfonos reales (arm64) y emulador x86_64; deja afuera ABIs viejas para achicar el APK.
             abiFilters += listOf("arm64-v8a", "x86_64")
@@ -59,4 +60,19 @@ dependencies {
     implementation(libs.opencv.android)
     implementation(libs.litert)
     testImplementation(libs.junit)
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.junit)
 }
+
+// Vectores dorados de ml/golden dentro del APK de test (no del de la app):
+//   ./gradlew connectedDebugAndroidTest -PgoldenDir=<ml/golden>
+val goldenAssets = layout.buildDirectory.dir("golden-assets")
+val syncGoldenAssets by tasks.registering(Sync::class) {
+    (findProperty("goldenDir") as String?)?.let { dir ->
+        from(dir) { include("*/case.json", "*/image.png", "*/input_u8.bin", "*/output_logits_f32.bin") }
+    }
+    into(goldenAssets.map { it.dir("golden") })
+}
+android.sourceSets.getByName("androidTest").assets.directories.add(goldenAssets.get().asFile.path)
+tasks.matching { it.name == "mergeDebugAndroidTestAssets" }.configureEach { dependsOn(syncGoldenAssets) }

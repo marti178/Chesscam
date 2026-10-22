@@ -14,6 +14,8 @@ opencvDesktop = "4.9.0-0"
 # WorkManager y Room, y agrega permisos de servicio en primer plano que la SPEC no permite.
 litert = "1.4.2"
 junit = "4.13.2"
+androidxTestRunner = "1.7.0"
+androidxTestJunit = "1.3.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -34,6 +36,8 @@ opencv-android = { group = "org.opencv", name = "opencv", version.ref = "opencv"
 opencv-desktop = { group = "org.openpnp", name = "opencv", version.ref = "opencvDesktop" }
 litert = { group = "com.google.ai.edge.litert", name = "litert", version.ref = "litert" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+androidx-test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestJunit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
