@@ -1,0 +1,26 @@
+# Etiquetas de tablero para eval/ (formato en android/core/.../eval/BoardEval.kt).
+# archivo  TLx TLy  TRx TRy  BRx BRy  BLx BLy  (pixeles de la imagen original, orden de ml/CONTRACT.md)
+#
+# test-*.jpeg: imagenes de Dynamic-Chess-Board-Piece-Extraction/test-images (sin licencia: NO se
+# commitean; solo pruebas locales). Estas esquinas salieron del detector el 21-10-2026 y se revisaron
+# a ojo sobre la imagen con la reticula dibujada: sirven para detectar regresiones, no son una
+# anotacion independiente.
+test-1.jpeg	233.7	451.1	962.0	438.6	1052.8	1224.3	158.2	1238.7
+test-2.jpeg	221.3	296.2	955.0	290.0	1064.1	1038.8	127.9	1041.8
+test-3.jpeg	244.5	342.4	969.8	330.7	1038.1	1102.6	153.9	1092.6
+test-4.jpeg	240.2	443.2	952.7	418.3	1044.0	1192.6	136.2	1192.1
+test-5.jpeg	202.2	338.6	836.9	183.8	1095.7	790.0	415.7	1019.4
+test-6.jpeg	241.4	453.2	950.7	441.7	1061.6	1211.2	133.5	1215.6
+test-7.jpeg	235.2	435.7	941.5	415.3	1046.9	1166.5	137.9	1181.5
+test-8.jpeg	229.3	341.4	966.4	310.4	1040.8	1100.0	168.4	1110.2
+test-9.jpeg	282.7	555.1	1150.2	532.0	1294.9	1438.6	200.5	1483.0
+test-10.jpeg	286.0	517.5	1199.4	523.9	1305.0	1492.0	171.8	1495.6
+test-11.jpeg	352.5	724.3	1071.2	704.9	1162.5	1465.8	268.5	1488.4
+test-12.jpeg	420.1	546.6	1060.6	547.0	1113.3	1188.8	383.0	1198.6
+test-13.jpeg	433.0	459.7	993.6	598.3	824.6	1202.3	161.0	954.9
+test-14.jpeg	224.3	390.3	967.1	383.5	1057.6	1185.1	142.3	1190.0
+test-15.jpeg	332.7	250.9	1034.0	313.4	993.6	1058.4	142.9	931.8
+test-16.jpeg	225.1	323.5	973.1	317.1	1056.6	1109.5	128.7	1107.9
+test-17.jpeg	313.7	545.2	921.9	534.0	996.8	1179.2	254.2	1178.2
+test-18.jpeg	239.7	322.7	914.8	329.5	1016.9	973.6	133.5	987.5
+test-19.jpeg	219.3	400.7	925.4	395.3	1032.2	1132.8	128.8	1150.4
