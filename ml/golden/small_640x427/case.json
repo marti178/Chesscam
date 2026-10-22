@@ -245,7 +245,7 @@
   "empty",
   "p",
   "empty",
-  "k",
+  "n",
   "P",
   "empty",
   "empty",
@@ -266,5 +266,5 @@
   "empty",
   "empty"
  ],
- "expected_top1_matches_truth": 63
+ "expected_top1_matches_truth": 62
 }

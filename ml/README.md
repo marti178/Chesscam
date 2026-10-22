@@ -37,6 +37,47 @@ python -m chessscan.prepare_chesscog --raw data/raw/extracted --out data/prepare
 
 `prepare_chesscog` rectifica cada render a la imagen canónica del contrato y guarda `canon.npy` + `labels.npy` por split (4400 / 146 / 342 tableros). Los recortes se sacan en el entrenamiento, después de aumentar.
 
+## 1b. Otras fuentes del modelo v2
+
+Licencias de cada una en `LICENSES.md`; el modelo v2 queda CC BY‑NC‑SA 4.0.
+
+**Sintético 2D (tableros en pantalla fotografiados):**
+
+```bash
+# sets de piezas y texturas de tablero de lichess-org/lila (lista exacta en LICENSES.md)
+mkdir -p data/raw/pieces data/raw/boards
+for s in cburnett merida mpchess fantasy spatial celtic rhosgfx california caliente maestro fresca cardinal icpieces gioco tatiana dubrovny anarcandy cooke minimal-warmth totoy papercut horsey chessnut staunty; do
+  mkdir -p data/raw/pieces/$s
+  for p in wK wQ wR wB wN wP bK bQ bR bB bN bP; do
+    curl -sf -o data/raw/pieces/$s/$p.svg https://raw.githubusercontent.com/lichess-org/lila/master/public/piece/$s/$p.svg
+  done
+done
+for f in blue-marble.jpg blue.png blue2.jpg blue3.jpg brown.png canvas2.jpg green-plastic.png green.png grey.jpg horsey.jpg ic.png leather.jpg maple.jpg maple2.jpg marble.jpg metal.jpg olive.jpg pink-pyramid.png purple-diag.png purple.png wood.jpg wood2.jpg wood3.jpg wood4.jpg; do
+  curl -sf -o data/raw/boards/$f https://raw.githubusercontent.com/lichess-org/lila/master/public/images/board/$f
+done
+python -m chessscan.pieces2d --svg data/raw/pieces --out data/pieces_png
+python -m chessscan.synth2d --out data/prepared2d_tex   --seed 8 --n 2000 200 300 300
+python -m chessscan.synth2d --out data/prepared2d_tex_b --seed 9 --n 2000 0 0 0 --splits train
+python -m chessscan.synth2d --out data/prepared2d --seed 7 --n 4000 200 300 300
+```
+
+`data/prepared2d` del v2 se generó con la primera versión del generador (sin texturas, selección ni premove): para reproducirlo exacto, correr ese último comando con `chessscan/synth2d.py` del commit `3876848`.
+
+`chessnut` y `staunty` quedan reservados para `test_heldout` (sets nunca vistos).
+
+**ChessReD (real, CC BY‑NC‑SA):** `annotations.json` (MD5 `d34bca5ad46ec7a8df96a1d3c36784f3`) de 4TU (o de su copia en el Wayback Machine) y las imágenes preprocesadas de 1024 px del repo de los autores (Google Drive id `1jxmFxjOy0qefdCZ_x3DMNtsvAK4LojEw`, 2 521 777 844 bytes). Se usa el subconjunto `chessred2k`, que es el que trae esquinas:
+
+```bash
+python -m chessscan.prepare_chessred --ann annotations.json --images data/raw/chessred --out data/prepared_chessred
+```
+
+**samryan18/chess-dataset (real, MIT):**
+
+```bash
+git clone --depth 1 https://github.com/samryan18/chess-dataset.git data/raw/samryan18
+python -m chessscan.prepare_samryan --raw data/raw/samryan18 --out data/prepared_samryan
+```
+
 ## 2. Datos reales propios (autoetiquetado)
 
 1. Armá una posición conocida en tu tablero (la inicial sirve; mejor varias posiciones con todas las piezas en distintas casillas, por ejemplo cargadas desde un FEN).
@@ -56,6 +97,15 @@ Fotos sueltas con FEN conocido: anotá las esquinas en un JSON (ver `eval_annota
 
 ```bash
 python -m chessscan.pipeline --run runs/v1 --data data/prepared --epochs 10 --steps 1000 --seed 1234
+```
+
+**Modelo v2 entregado** (ajuste fino desde v1; ~52 min en CPU):
+
+```bash
+python -m chessscan.pipeline --run runs/v2 --data data/prepared --init runs/v1_cpu/model.keras --epochs 10 --steps 1000 --lr 1e-3 --seed 1234 \
+  --extra data/prepared2d/train:0.35 data/prepared2d_tex/train:0.35 data/prepared2d_tex_b/train:0.3 data/prepared_chessred/train:1.0 data/prepared_samryan/train:0.3 \
+  --val-extra data/prepared2d_tex/val data/prepared_chessred/val \
+  --eval-real data/prepared_real/test data/prepared_chessred/test data/prepared_samryan/test data/prepared2d_tex/test data/prepared2d_tex/test_heldout
 ```
 
 Con datos reales propios (recomendado; mezcla 1 tablero real cada ~3 sintéticos):
