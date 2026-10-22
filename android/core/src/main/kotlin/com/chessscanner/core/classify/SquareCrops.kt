@@ -50,6 +50,7 @@ class SquareCrops {
     private val crop = Mat(CROP_H, CROP_W, CvType.CV_8UC3)
     private val flipped = Mat()
     private val bytes = ByteArray(CROP_BYTES)
+    private val floats = FloatArray(CROP_BYTES)
 
     /** Homografía imagen → canónica (3×3, CV_64F) a partir de las esquinas TL, TR, BR, BL. */
     fun homography(corners: List<Pt>): Mat {
@@ -86,7 +87,9 @@ class SquareCrops {
         val fb = out.asFloatBuffer()
         for (row in 0 until 8) for (col in 0 until 8) {
             crop(canon, row, col).get(0, 0, bytes)
-            for (b in bytes) fb.put((b.toInt() and 0xFF).toFloat())
+            // Conversión en un arreglo y copia en bloque: put() de a uno sobre el buffer directo es ~10× más lento.
+            for (i in bytes.indices) floats[i] = (bytes[i].toInt() and 0xFF).toFloat()
+            fb.put(floats)
         }
         out.rewind()
     }

@@ -3,6 +3,7 @@ package com.chessscanner.app.ui
 import android.app.Application
 import android.os.Build
 import android.os.PowerManager
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import com.chessscanner.app.camera.FrameAnalyzer
 import com.chessscanner.app.classify.LiteRtSquareClassifier
@@ -63,6 +64,7 @@ class ScannerViewModel(app: Application) : AndroidViewModel(app) {
     @Volatile private var resetRequested = false
     private var lastFrameAt = 0L
     private var fps = 0.0
+    private var frameCount = 0
 
     val analyzer = FrameAnalyzer(pipeline, paused = { _frozen.value != null }) { result, ms ->
         if (resetRequested) {
@@ -97,6 +99,16 @@ class ScannerViewModel(app: Application) : AndroidViewModel(app) {
             fps = if (fps == 0.0) inst else 0.9 * fps + 0.1 * inst
         }
         lastFrameAt = now
+        if (++frameCount % 30 == 0) {
+            // Para medir en el teléfono: adb logcat -s SCAN
+            Log.i(
+                "SCAN",
+                "fps=%.1f frame=%.1fms detect=%.1fms classify=%.1fms clasificó=%b estado=%s img=%dx%d intervaloTérmico=%dms".format(
+                    fps, frameMs, r.detectMs, r.classifyMs, r.classified, r.status, r.imageWidth, r.imageHeight,
+                    pipeline.minClassifyIntervalMs,
+                ),
+            )
+        }
         val f = r.fusion
         val doubtfulImage = if (f == null || r.board == null) emptySet() else
             (0 until 64).filter { !f.confident[BoardFrame.boardCell(it / 8, it % 8, r.shift)] }.toSet()
