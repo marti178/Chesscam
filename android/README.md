@@ -3,7 +3,8 @@
 Implementación de la parte Android de [`SPEC.md`](../SPEC.md): cámara en vivo → tablero → 64 casillas →
 clasificador → fusión temporal → orientación → FEN → Lichess. Todo offline; el único permiso es `CAMERA`.
 
-> **Estado (22‑10‑2026):** compila, tests verdes, APK debug con el modelo **v2** de `ml/` (licencia **CC BY‑NC‑SA 4.0,
+> **Estado (22‑10‑2026):** compila, tests verdes, APK debug con el modelo **v3** de `ml/` (vectores dorados v3
+> verificados en la PC; en el teléfono todavía no) (licencia **CC BY‑NC‑SA 4.0,
 > solo uso no comercial**), instalado y medido en
 > **un** teléfono (Xiaomi 24122RKC7G, Snapdragon 8 Elite, gama alta: **no representa la gama media de la SPEC**).
 > Todavía no se midió la precisión con el tablero real del usuario.
@@ -123,9 +124,9 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Modelo
 
-`app/src/main/assets/chess_square_classifier.tflite` + `labels.txt` son el modelo **v2** de la rama
-`claude/ml-modelo-de93a1` (commit a7e4bb4, fp16, 1 916 920 bytes; SHA‑256 `48ba3677…2f0e82c`, igual a
-`ml/export/SHA256SUMS`, verificado también dentro del APK instalado).
+`app/src/main/assets/chess_square_classifier.tflite` + `labels.txt` son el modelo **v3** de la rama
+`claude/ml-modelo-de93a1` (commit c548c94, fp16, 1 916 920 bytes; SHA‑256 `7e5d4eee…6b4b958`, igual a
+`ml/export/SHA256SUMS`). v3 = v2 ajustado con un video del tablero físico del usuario.
 `LiteRtSquareClassifier` lo carga sin comprimir y comprueba que `labels.txt` tenga el orden de clases del contrato
 y que los tensores sean `[64,128,64,3]` → `[64,13]`. Si algo falla usa `FakeSquareClassifier` (solo textura:
 vacía / «peón» claro / «peón» oscuro) y la pantalla dice «Sin modelo: clasificador de prueba».
@@ -133,10 +134,13 @@ Para actualizarlo: copiar `ml/export/chess_square_classifier.tflite` y `labels.t
 
 Precisión por casilla en un solo fotograma según `ml/RESULTS.md` (v1 → v2): ChessReD real 81,6 → 97,0 %,
 samryan18 real 75,2 → 99,4 %, tablero real nunca visto (chesscog, 27 fotos) 83,0 → 89,0 %, 2D sintético 73,5 → 98,3 %,
-captura de Lichess en el Xiaomi 0/8 → 8/8 piezas. La confusión más común es dama ↔ rey del mismo color: la fusión deja
+captura de Lichess en el Xiaomi 0/8 → 8/8 piezas. Con el v3, en el tablero del usuario (tramo de test del video):
+1 fotograma 82,8 → 97,8 % (piezas 38,0 → 91,8 %), con fusión 98,4 % (63/64); ojo, train y test tienen la misma
+posición. En un tablero ajeno nunca visto baja un poco (89,0 → 86,1 %); 2D real en pantalla 99,9 %. Lo más flojo en
+el tablero del usuario: torre negra y rey blanco. La confusión más común es dama ↔ rey del mismo color: la fusión deja
 esa casilla dudosa si el otro de la pareja tiene ≥ 3 % de probabilidad (`FusionConfig.queenKingMinOther`).
 
-**Licencia: el v2 es CC BY‑NC‑SA 4.0 (por ChessReD), solo uso no comercial** (ver [`LICENSES.md`](LICENSES.md)).
+**Licencia: el v3 (igual que el v2) es CC BY‑NC‑SA 4.0 (por ChessReD), solo uso no comercial** (ver [`LICENSES.md`](LICENSES.md)).
 La atribución completa está en la app (botón «Créditos»).
 
 Test instrumentado (necesita teléfono o emulador): compara la salida del modelo en Android con
@@ -160,7 +164,7 @@ camino completo PNG → recorte con OpenCV Android → modelo. Los vectores van 
 ## Limitaciones conocidas
 
 - **Probado en un solo teléfono, de gama alta.** Falta medir en gama media y verificar a ojo, con el tablero real, que la retícula quede alineada sobre la vista previa en distintos teléfonos.
-- **Modelo v2: 89 % por casilla en un tablero real nunca visto** (según ML, un fotograma). Todavía no se midió con el tablero del usuario ni después de la fusión. «Posición lista» puede aparecer con piezas mal clasificadas: conviene revisar siempre al congelar.
+- **Modelo v3: 98 % por casilla en el tablero del usuario, pero medido con la misma posición con la que se ajustó**, y 86 % en un tablero ajeno nunca visto (según ML). Falta medirlo en la app con otras posiciones. «Posición lista» puede aparecer con piezas mal clasificadas: conviene revisar siempre al congelar.
 - **Licencia del modelo CC BY‑NC‑SA 4.0:** el APK con este modelo no puede usarse con fines comerciales.
 - Sin tablero detectado, el tablero digital se muestra vacío y atenuado («Sin posición»); la fusión se conserva hasta 15 fotogramas por si el tablero vuelve, y después se reinicia.
 - Umbrales del control de calidad (nitidez 40, tamaño 35 % del lado menor, ángulo 0,45, movimiento 0,25 casillas/fotograma) puestos a ojo; hay que ajustarlos con fotogramas reales del teléfono.
