@@ -167,7 +167,8 @@ def main() -> None:
     ap.add_argument("--limit-train", type=int, default=0, help="usar solo N tableros (pruebas)")
     ap.add_argument("--eval-only", action="store_true", help="saltear el entrenamiento y usar run/model.keras")
     ap.add_argument("--init", type=Path, help="ajuste fino: partir de este model.keras en vez de ImageNet")
-    ap.add_argument("--eval-real", type=Path, nargs="*", default=[], help="datos reales preparados para evaluar")
+    ap.add_argument("--eval-real", type=Path, nargs="*", default=[], help="otros sets preparados para evaluar (reales, 2D…)")
+    ap.add_argument("--val-extra", type=Path, nargs="*", default=[], help="sets extra que se suman a la validación")
     a = ap.parse_args()
 
     a.run.mkdir(parents=True, exist_ok=True)
@@ -184,6 +185,9 @@ def main() -> None:
         sources.append((Boards.load(Path(d)), float(w)))
 
     xv, yv = all_crops(val)
+    for d in a.val_extra:
+        xe, ye = all_crops(Boards.load(d))
+        xv, yv = np.concatenate([xv, xe]), np.concatenate([yv, ye])
 
     if not a.eval_only:
         model = keras.models.load_model(a.init) if a.init else build_model(a.arch)

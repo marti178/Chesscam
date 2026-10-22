@@ -35,7 +35,24 @@ THEMES = [
     ((241, 222, 222), (186, 85, 85)),    # rojo
     ((206, 206, 206), (120, 120, 120)),  # gris neutro
 ]
-HIGHLIGHTS = [((155, 199, 0), 0.41), ((247, 247, 105), 0.5), ((255, 255, 51), 0.45), ((20, 85, 30), 0.5)]
+# Colores de la interfaz de Lichess (chessground) y de chess.com.
+HIGHLIGHTS = [((155, 199, 0), 0.41), ((247, 247, 105), 0.5), ((255, 255, 51), 0.45)]
+SELECTED = ((20, 85, 30), 0.5)
+PREMOVE = ((20, 30, 85), 0.5)
+_TEXTURES: list[np.ndarray] = []
+
+
+def load_textures(root: Path) -> None:
+    """Tableros completos de lila/public/images/board (AGPL-3.0+, uso personal)."""
+    for p in sorted(root.glob("*")):
+        im = cv2.imread(str(p), cv2.IMREAD_COLOR)
+        if im is not None:
+            _TEXTURES.append(cv2.cvtColor(im, cv2.COLOR_BGR2RGB))
+
+
+def tint(img, r, c, sq, color, a):
+    roi = img[r * sq:(r + 1) * sq, c * sq:(c + 1) * sq].astype(np.float32)
+    img[r * sq:(r + 1) * sq, c * sq:(c + 1) * sq] = (roi * (1 - a) + np.array(color) * a).astype(np.uint8)
 ARROWS = [(21, 120, 27), (136, 32, 32), (0, 48, 136), (230, 143, 0)]
 SYMBOLS = {"K": "K", "Q": "Q", "R": "R", "B": "B", "N": "N", "P": "P"}
 
@@ -108,7 +125,12 @@ def render_board(b, pieces, rng, sq: int, flipped: bool) -> np.ndarray:
     for row in range(8):
         for col in range(8):
             img[row * sq:(row + 1) * sq, col * sq:(col + 1) * sq] = light if (row + col) % 2 == 0 else dark
-    if rng.random() < 0.25:  # textura tipo madera/mármol
+    if _TEXTURES and rng.random() < 0.6:
+        t = _TEXTURES[int(rng.integers(len(_TEXTURES)))]
+        img = cv2.resize(t, (B, B), interpolation=cv2.INTER_AREA)
+        tex = np.array(img, np.float32)
+        light, dark = tex[: sq, : sq].reshape(-1, 3).mean(0), tex[: sq, sq: 2 * sq].reshape(-1, 3).mean(0)
+    elif rng.random() < 0.25:  # textura tipo madera/mármol
         tex = cv2.GaussianBlur(rng.normal(0, 1, (B // 4, B // 4)).astype(np.float32), (0, 0), 2)
         tex = cv2.resize(tex, (B, B))[..., None]
         img = np.clip(img + tex * rng.uniform(4, 15), 0, 255).astype(np.uint8)
@@ -120,9 +142,14 @@ def render_board(b, pieces, rng, sq: int, flipped: bool) -> np.ndarray:
     if rng.random() < 0.6:
         color, a = HIGHLIGHTS[int(rng.integers(len(HIGHLIGHTS)))]
         for _ in range(2):
-            r, c = int(rng.integers(8)), int(rng.integers(8))
-            roi = img[r * sq:(r + 1) * sq, c * sq:(c + 1) * sq].astype(np.float32)
-            img[r * sq:(r + 1) * sq, c * sq:(c + 1) * sq] = (roi * (1 - a) + np.array(color) * a).astype(np.uint8)
+            tint(img, int(rng.integers(8)), int(rng.integers(8)), sq, color, a)
+    if rng.random() < 0.1:  # premove
+        for _ in range(2):
+            tint(img, int(rng.integers(8)), int(rng.integers(8)), sq, *PREMOVE)
+    dests = []
+    if rng.random() < 0.25:  # pieza seleccionada + destinos posibles
+        tint(img, int(rng.integers(8)), int(rng.integers(8)), sq, *SELECTED)
+        dests = [(int(rng.integers(8)), int(rng.integers(8))) for _ in range(int(rng.integers(1, 9)))]
     # Jaque: halo rojo radial debajo de un rey.
     kings = [(rk, fl) for rk in range(8) for fl in range(8) if b[rk][fl] and b[rk][fl][1] == "K"]
     if kings and rng.random() < 0.2:
@@ -146,7 +173,7 @@ def render_board(b, pieces, rng, sq: int, flipped: bool) -> np.ndarray:
             cv2.putText(img, ranks[i], (int(sq * 0.05), i * sq + int(sq * 0.28)),
                         cv2.FONT_HERSHEY_SIMPLEX, fs, col_txt, max(1, sq // 45), cv2.LINE_AA)
     # Piezas.
-    scale = rng.uniform(0.78, 1.0)
+    scale = 1.0 if rng.random() < 0.5 else rng.uniform(0.78, 1.0)
     ps = max(8, int(sq * scale))
     cache = {}
     for rk in range(8):
@@ -159,6 +186,18 @@ def render_board(b, pieces, rng, sq: int, flipped: bool) -> np.ndarray:
             r, c = cell(rk, fl)
             off = (sq - ps) // 2
             alpha_paste(img, cache[p], c * sq + off, r * sq + off + (int(rng.integers(0, max(1, off + 1))) if rng.random() < 0.1 else 0))
+    # Destinos: punto en casilla vacía, esquinas en casilla ocupada (como chessground).
+    for r, c in dests:
+        over = img.copy()
+        occupied = b[7 - r][c] if not flipped else b[r][7 - c]
+        if occupied is None:
+            cv2.circle(over, (c * sq + sq // 2, r * sq + sq // 2), max(2, int(sq * 0.18)), SELECTED[0], -1, cv2.LINE_AA)
+        else:
+            for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+                x0, y0 = c * sq + dx * sq, r * sq + dy * sq
+                k = int(sq * 0.3) * (1 if dx == 0 else -1), int(sq * 0.3) * (1 if dy == 0 else -1)
+                cv2.fillPoly(over, [np.array([[x0, y0], [x0 + k[0], y0], [x0, y0 + k[1]]])], SELECTED[0])
+        img = cv2.addWeighted(over, SELECTED[1], img, 1 - SELECTED[1], 0)
     # Flechas (encima de las piezas, semitransparentes).
     for _ in range(int(rng.choice([0, 0, 0, 1, 1, 2]))):
         over = img.copy()
@@ -266,10 +305,16 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=7)
     ap.add_argument("--n", nargs=4, type=int, default=[4000, 200, 300, 300],
                     metavar=("TRAIN", "VAL", "TEST", "TEST_HELDOUT"))
+    ap.add_argument("--splits", nargs="*", help="generar solo estos splits (para correr en paralelo)")
+    ap.add_argument("--boards", type=Path, default=Path("data/raw/boards"), help="texturas de tablero de lila")
     ap.add_argument("--preview", type=Path, help="guardar 6 fotos de ejemplo acá")
     a = ap.parse_args()
     seen, held = load_sets(a.pieces, "train"), load_sets(a.pieces, "heldout")
+    if a.boards.exists():
+        load_textures(a.boards)
     for k, (split, n) in enumerate(zip(["train", "val", "test", "test_heldout"], a.n)):
+        if a.splits and split not in a.splits:
+            continue
         sets = held if split == "test_heldout" else seen
         rng = np.random.default_rng([a.seed, k])
         d = a.out / split
