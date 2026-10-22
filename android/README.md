@@ -178,7 +178,7 @@ camino completo PNG → recorte con OpenCV Android → modelo. Los vectores van 
 - Sin tablero detectado, el tablero digital se muestra vacío y atenuado («Sin posición»); la fusión se conserva hasta 15 fotogramas por si el tablero vuelve, y después se reinicia.
 - Umbrales del control de calidad (nitidez 40, tamaño 35 % del lado menor, ángulo 0,45, movimiento 0,25 casillas/fotograma) puestos a ojo; hay que ajustarlos con fotogramas reales del teléfono.
 - La retícula se dibuja suponiendo que la vista previa (`FIT_CENTER`) y el análisis 4:3 tienen el mismo campo visual; en algunos teléfonos puede quedar corrida unos píxeles.
-- Sin tablero a la vista, o con un diagrama difícil, el detector prueba hasta 4 variantes por fotograma (en la PC, hasta ~150 ms con imágenes de 1280 px). Falta medir ese caso en el teléfono (`PipelineBenchmarkTest` ya tiene «detector sin tablero» y «detector diagrama de libro»).
+- Con un diagrama de libro el detector prueba varias variantes: en el Xiaomi tarda **~91 ms** (mediana) en detectarlo, contra **12 ms** con un tablero común y **9 ms** sin tablero a la vista (medido el 22‑10‑2026 con `PipelineBenchmarkTest`). Solo pasa al buscar el tablero: después lo sigue el flujo óptico (< 1 ms) y se redetecta cada 15 fotogramas.
 - El detector necesita ver una buena parte de las líneas del damero; tableros sin contraste entre casillas, muy tapados o muy de costado (cociente de lados < 0,45) no se detectan o se rechazan.
 - Si el tablero se pierde más de 15 fotogramas seguidos, o la nueva detección cae a más de 1,5 casillas de la anterior, se reinicia la fusión.
 - La orientación usa heurísticas (a1 oscura por luminancia, filas, peones). Con pocas piezas, o casillas de poco contraste, queda «dudosa» y hay que usar «Girar».
