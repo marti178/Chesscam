@@ -1,0 +1,6 @@
+*.log
+data/
+runs/
+.venv/
+*.err
+cache_videos.py
