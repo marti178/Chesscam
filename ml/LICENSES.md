@@ -66,6 +66,18 @@ No usados: los sets de piezas AGPL (letter, pirouetti, pixel), los «freeware» 
 
 `ml/export/chess_square_classifier.tflite` **v2** está entrenado con pesos ImageNet (Apache 2.0), chesscog (CC BY 4.0), ChessReD (**CC BY‑NC‑SA 4.0**), samryan18 (MIT) e imágenes generadas con sets de piezas y texturas de Lichess (licencias en la tabla de arriba, incluidas GPL, AGPL y CC BY‑NC‑SA). **El modelo se distribuye bajo CC BY‑NC‑SA 4.0: solo uso no comercial**, y los derivados con la misma licencia. El usuario aceptó esto para una app personal y gratuita (22‑10‑2026). Para una versión comercial hay que reentrenar solo con fuentes libres (chesscog, samryan18, sets MIT/Apache/CC0/CC BY) y volver a medir.
 
+
+**Fuentes de entrenamiento por versión** (los modelos v2 en adelante se publican bajo CC BY‑NC‑SA 4.0):
+
+| Modelo | Fuentes |
+|---|---|
+| v1 | chesscog sintético (CC BY 4.0) |
+| v2 | v1 + sintético 2D con sets y texturas de Lichess (GPL, AGPL, MIT, Apache, CC0, CC BY, CC BY‑NC‑SA, según el set) + ChessReD chessred2k (CC BY‑NC‑SA 4.0) + samryan18 (MIT) |
+| v3 | v2 + video del tablero del usuario `VID_20261022_104414` (propio) |
+| v4 | v3 + diagramas de libro sintéticos (mismos sets de Lichess) |
+| v5 | v4 + videos del usuario `VID_20261022_132028` (propio) y **`VID_20261022_134155`, cuadros 0–899: video de un PDF del libro «Tratado general de ajedrez» (con copyright)** |
+| v6 | se agrega acá cada fuente nueva al publicarlo |
+
 Atribución que tiene que mostrar la app:
 
 > Modelo entrenado con: «Dataset of Rendered Chess Game State Images» de G. Wölflein y O. Arandjelović (2021, https://osf.io/xf3ka/, CC BY 4.0); «Chess Recognition Dataset (ChessReD)» de A. Masouris y J. van Gemert (2023, 4TU.ResearchData, DOI 10.4121/99b5c721-280b-450b-b058-b2900b69a90f, CC BY‑NC‑SA 4.0); «chess-dataset» de S. Ryan, M. Venkateswaran, K. Convey y M. Deng (2019, MIT); y sets de piezas y tableros de Lichess (lila, lichess-org; autores y licencias en LICENSES.md). Este modelo se distribuye bajo CC BY‑NC‑SA 4.0.
