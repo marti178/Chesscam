@@ -27,7 +27,7 @@ class TrackUpdate(
     val board: BoardDetection?,
     /** Qué esquina del tablero persistente (0..3, horario) aparece como TL de la imagen. */
     val shift: Int,
-    /** El tablero cambió de lugar o es otro: hay que reiniciar la fusión. */
+    /** El tablero cambió de lugar, es otro, o se perdió del todo: hay que reiniciar la fusión. */
     val jumped: Boolean,
     /** Desplazamiento máximo de una esquina desde el fotograma anterior, en casillas. */
     val motionSquares: Double,
@@ -106,8 +106,10 @@ class BoardTracker(
 
         if (next == null) {
             lostFrames++
+            // Perdido del todo: lo que se haya acumulado ya no vale (el tablero pudo cambiar).
+            val dropped = lostFrames > params.maxLostFrames && corners != null
             if (lostFrames > params.maxLostFrames) corners = null
-            return TrackUpdate(null, shift, false, 0.0, 0.0, false)
+            return TrackUpdate(null, shift, dropped, 0.0, 0.0, false)
         }
         lostFrames = 0
         val square = Quad.meanSide(next) / 8

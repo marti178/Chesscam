@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.alpha
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -63,9 +67,12 @@ fun BoardView(
     board: Board,
     doubtful: Set<Int>,
     modifier: Modifier = Modifier,
+    /** Si no es null, el tablero se atenúa y muestra este texto encima (no hay posición vigente). */
+    placeholder: String? = null,
     onSquareClick: ((Int) -> Unit)? = null,
 ) {
-    BoxWithConstraints(modifier.aspectRatio(1f)) {
+    Box(modifier.aspectRatio(1f), contentAlignment = Alignment.Center) {
+    BoxWithConstraints(Modifier.fillMaxSize().alpha(if (placeholder != null) 0.35f else 1f)) {
         val cell = maxWidth / 8
         val fontSp = cell.value * 0.72f
         Column {
@@ -90,5 +97,11 @@ fun BoardView(
                 }
             }
         }
+    }
+    if (placeholder != null) Text(
+        placeholder,
+        Modifier.background(Color(0xCC000000), RoundedCornerShape(8.dp)).padding(horizontal = 10.dp, vertical = 6.dp),
+        color = Color.White, fontSize = 14.sp,
+    )
     }
 }

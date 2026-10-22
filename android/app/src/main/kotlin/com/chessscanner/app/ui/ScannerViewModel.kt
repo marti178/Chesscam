@@ -36,6 +36,7 @@ data class LiveUi(
     /** Piezas en coordenadas del tablero físico y si cada una es confiable. */
     val grid: List<Piece> = List(64) { Piece.EMPTY },
     val confident: List<Boolean> = List(64) { false },
+    /** Hay una posición en curso para este tablero. Si es false, el tablero digital se muestra vacío y atenuado. */
     val hasFusion: Boolean = false,
     val autoRotation: Int = 0,
     val orientationDoubtful: Boolean = true,
@@ -122,7 +123,7 @@ class ScannerViewModel(app: Application) : AndroidViewModel(app) {
                 doubtfulImageCells = doubtfulImage,
                 grid = f?.labelsOrEmpty()?.toList() ?: List(64) { Piece.EMPTY },
                 confident = f?.confident?.toList() ?: List(64) { false },
-                hasFusion = f != null && f.frames > 0,
+                hasFusion = f != null && f.frames > 0 && f.labels.any { it != null },
                 autoRotation = r.orientation?.rotation ?: old.autoRotation,
                 orientationDoubtful = r.orientation?.doubtful ?: true,
                 orientationReason = r.orientation?.reason,
@@ -137,7 +138,8 @@ class ScannerViewModel(app: Application) : AndroidViewModel(app) {
     /** Rotación que se muestra ahora (automática + giro manual). */
     fun liveRotation(l: LiveUi = _live.value) = (l.autoRotation + _rotationOffset.value) and 3
 
-    fun liveBoard(l: LiveUi): Board = GridMapping.toBoard(l.grid.toTypedArray(), liveRotation(l))
+    fun liveBoard(l: LiveUi): Board =
+        if (l.hasFusion) GridMapping.toBoard(l.grid.toTypedArray(), liveRotation(l)) else Board()
 
     fun liveDoubtfulSquares(l: LiveUi): Set<Int> {
         if (!l.hasFusion) return emptySet()

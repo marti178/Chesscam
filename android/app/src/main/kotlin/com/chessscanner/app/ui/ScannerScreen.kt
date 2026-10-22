@@ -99,6 +99,7 @@ private fun LiveScreen(viewModel: ScannerViewModel, live: LiveUi) {
             BoardView(
                 viewModel.liveBoard(live), viewModel.liveDoubtfulSquares(live),
                 Modifier.width(184.dp),
+                placeholder = if (live.hasFusion) null else "Sin posición",
             )
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {

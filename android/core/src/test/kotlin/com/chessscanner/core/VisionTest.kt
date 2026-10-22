@@ -187,6 +187,56 @@ class VisionTest {
         assertTrue(luma[0] > luma[1])
     }
 
+    @Test fun losingTheBoardNeverShowsStalePieces() {
+        val pipeline = ScanPipeline(FakeSquareClassifier())
+        val (rgb, _) = scene(flatBoard(true), TILTED)
+        val g = gray(rgb)
+        var t = 0L
+        repeat(30) { pipeline.process(g, { rgb }, t); t += 50 }
+        assertTrue(pipeline.fusion.snapshot().labels.any { it != null && it != Piece.EMPTY })
+
+        // Sin tablero: no se devuelve ninguna posición, ni siquiera en el primer fotograma.
+        val blank = Mat(480, 640, CvType.CV_8UC3, Scalar(150.0, 150.0, 150.0))
+        val gBlank = gray(blank)
+        val first = pipeline.process(gBlank, { blank }, t)
+        assertEquals(ScanStatus.SEARCHING, first.status)
+        assertNull(first.fusion)
+        assertNull(first.orientation)
+        // Perdido del todo (más de 15 fotogramas): la fusión se reinicia.
+        repeat(20) { t += 50; assertNull(pipeline.process(gBlank, { blank }, t).fusion) }
+        assertEquals(0, pipeline.fusion.snapshot().frames)
+
+        // Un tablero vacío en otro lugar: arranca de cero, sin las "piezas" de antes.
+        val other = listOf(Pt(150.0, 60.0), Pt(500.0, 70.0), Pt(520.0, 420.0), Pt(130.0, 410.0))
+        val (rgb2, _) = scene(flatBoard(false), other)
+        val g2 = gray(rgb2)
+        t += 50
+        val r = pipeline.process(g2, { rgb2 }, t)
+        assertTrue(r.fusion == null || r.fusion!!.labels.all { it == null || it == Piece.EMPTY })
+        repeat(10) { t += 50; pipeline.process(g2, { rgb2 }, t) }
+        assertTrue(pipeline.fusion.snapshot().labels.all { it == null || it == Piece.EMPTY })
+    }
+
+    @Test fun jumpToAnotherBoardResetsFusion() {
+        val pipeline = ScanPipeline(FakeSquareClassifier())
+        val (rgb, _) = scene(flatBoard(true), TILTED)
+        val g = gray(rgb)
+        var t = 0L
+        repeat(20) { pipeline.process(g, { rgb }, t); t += 50 }
+        // Salto directo (sin fotogramas en blanco) a otro tablero, vacío, lejos del anterior.
+        val far = listOf(Pt(20.0, 20.0), Pt(300.0, 25.0), Pt(310.0, 300.0), Pt(15.0, 290.0))
+        val (rgb2, _) = scene(flatBoard(false), far)
+        val g2 = gray(rgb2)
+        var sawReset = false
+        repeat(20) {
+            t += 50
+            val r = pipeline.process(g2, { rgb2 }, t)
+            if (r.fusion == null || r.fusion!!.frames <= 1) sawReset = true
+        }
+        assertTrue("no se reinició la fusión al cambiar de tablero", sawReset)
+        assertTrue(pipeline.fusion.snapshot().labels.all { it == null || it == Piece.EMPTY })
+    }
+
     @Test fun pipelineRunsEndToEndWithFakeClassifier() {
         val pipeline = ScanPipeline(FakeSquareClassifier())
         val (rgb, _) = scene(flatBoard(true), TILTED)

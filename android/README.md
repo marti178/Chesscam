@@ -3,10 +3,44 @@
 Implementación de la parte Android de [`SPEC.md`](../SPEC.md): cámara en vivo → tablero → 64 casillas →
 clasificador → fusión temporal → orientación → FEN → Lichess. Todo offline; el único permiso es `CAMERA`.
 
-> **Estado (22‑10‑2026):** compila, tests verdes, APK debug generado con el modelo v1 de `ml/`.
-> **No se probó en un teléfono** (no había ninguno conectado): no hay medición de latencia, fps ni
-> temperatura, y no se corrió el test instrumentado que compara los logits del modelo en Android con
-> los vectores dorados. Nada de lo que sigue garantiza que la app funcione bien en un dispositivo real.
+> **Estado (22‑10‑2026):** compila, tests verdes, APK debug con el modelo v1 de `ml/`, instalado y medido en
+> **un** teléfono (Xiaomi 24122RKC7G, Snapdragon 8 Elite, gama alta: **no representa la gama media de la SPEC**).
+> Todavía no se midió la precisión con el tablero real del usuario.
+
+## Medido en el teléfono (22‑10‑2026)
+
+Xiaomi 24122RKC7G, Android 16 (HyperOS), SoC SM8750, arm64‑v8a. Gama alta: en un teléfono de gama media hay que
+esperar varias veces estos tiempos.
+
+- **Vectores dorados en el teléfono** (`GoldenModelTest`): 2/2 OK en los 3 casos. |Δlogit| máx = 6·10⁻⁵
+  (tolerancia 0,1), tanto desde `input_u8.bin` como por el camino completo PNG → recorte con OpenCV Android → modelo.
+- **Latencia por etapa** (`PipelineBenchmarkTest`, fotograma 640×427, mediana / p90):
+
+  | etapa | mediana | p90 |
+  |---|---|---|
+  | detector completo (sin seguimiento) | 11,5 ms | 13,4 ms |
+  | seguimiento (flujo óptico + RANSAC) | 0,8 ms | 1,2 ms |
+  | control de calidad | 0,5 ms | 0,5 ms |
+  | rectificar + 64 recortes + tensor | 3,8 ms | 4,1 ms (era 48 ms antes de optimizar el copiado) |
+  | clasificador fp16, XNNPACK | 23,2 ms | 23,8 ms |
+  | clasificador fp16 sin XNNPACK | 30,3 ms | 33,4 ms |
+  | pipeline completo clasificando | 29,4 ms | 31,0 ms |
+
+  El clasificador da lo mismo con 1, 2, 4 o 6 hilos (23,2 ms), incluso con XNNPACK explícito. Puede ser que el
+  proceso de test corra con CPUs restringidas, pero en la app real también da ~31 ms (ver abajo), así que por ahora
+  los hilos no ayudan. No hay variante int8 para comparar (ML entregó solo fp16).
+- **En la app, 5 minutos abierta con la cámara** (logcat `SCAN`, 240 muestras cada 30 fotogramas): mediana 30 fps de
+  análisis (14–30 fps según la luz: la cámara baja a ~14 fps con poca luz). Con tablero y clasificando en cada
+  fotograma: ~30 fps, 33,5 ms por fotograma (clasificación 30,9 ms con recorte incluido, detección/seguimiento 1,7 ms).
+  Sin tablero: 2–10 ms por fotograma.
+- **Temperatura:** batería de 29,4 °C a 34,1 °C en 5 minutos; estado térmico 0 (`NONE`) todo el tiempo, así que la
+  reducción por temperatura nunca se activó. Ojo: el teléfono estaba cargando por USB, lo que también calienta.
+- Para medir de nuevo: `adb logcat -s SCAN` con la app abierta, y el benchmark con
+  `adb shell am instrument -w -e class com.chessscanner.app.PipelineBenchmarkTest com.chessscanner.live.test/androidx.test.runner.AndroidJUnitRunner`
+  (resultados con la etiqueta `BENCH`).
+- HyperOS: hay que activar «Instalar vía USB» en Opciones de desarrollador, y cada instalación pide confirmación en
+  el teléfono. `connectedDebugAndroidTest` de Gradle falla porque instala con `-g` (permiso que HyperOS no da);
+  hay que instalar los dos APK con `adb install -r` y lanzar `am instrument` a mano.
 
 ## Estructura
 
@@ -116,9 +150,9 @@ camino completo PNG → recorte con OpenCV Android → modelo. Los vectores van 
 
 ## Limitaciones conocidas
 
-- **No probado en dispositivo.** Latencia, fps, temperatura y la alineación de la retícula sobre la vista previa no están verificados.
+- **Probado en un solo teléfono, de gama alta.** Falta medir en gama media y verificar a ojo, con el tablero real, que la retícula quede alineada sobre la vista previa en distintos teléfonos.
 - **Modelo v1 flojo en piezas reales** (83 % por casilla en fotos reales, según ML). La confianza está calibrada con datos sintéticos, así que «Posición lista» puede aparecer con piezas mal clasificadas: conviene revisar siempre al congelar.
-- **Test instrumentado de logits sin correr** (no hubo dispositivo): no está verificado que LiteRT en el teléfono dé los mismos logits que la referencia.
+- Sin tablero detectado, el tablero digital se muestra vacío y atenuado («Sin posición»); la fusión se conserva hasta 15 fotogramas por si el tablero vuelve, y después se reinicia.
 - Umbrales del control de calidad (nitidez 40, tamaño 35 % del lado menor, ángulo 0,45, movimiento 0,25 casillas/fotograma) puestos a ojo; hay que ajustarlos con fotogramas reales del teléfono.
 - La retícula se dibuja suponiendo que la vista previa (`FIT_CENTER`) y el análisis 4:3 tienen el mismo campo visual; en algunos teléfonos puede quedar corrida unos píxeles.
 - El detector necesita ver una buena parte de las líneas del damero; tableros sin contraste entre casillas, muy tapados o muy de costado (cociente de lados < 0,45) no se detectan o se rechazan.

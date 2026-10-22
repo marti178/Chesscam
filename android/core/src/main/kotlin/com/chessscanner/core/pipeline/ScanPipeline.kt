@@ -35,7 +35,7 @@ class ScanResult(
     val boardGood: Boolean,
     /** Esquina del tablero persistente que está en TL de la imagen (para ubicar casillas en la imagen). */
     val shift: Int,
-    /** Estado fusionado en coordenadas del tablero; null si todavía no hay tablero. */
+    /** Estado fusionado en coordenadas del tablero; null si no hay tablero en este fotograma o la fusión está vacía. */
     val fusion: FusionSnapshot?,
     val orientation: OrientationResult?,
     val classified: Boolean,
@@ -91,8 +91,9 @@ class ScanPipeline(var classifier: SquareClassifier) {
         val w = gray.cols()
         val h = gray.rows()
         if (board == null) {
-            val snap = if (fusion.snapshot().frames > 0) fusion.snapshot(timestampMs) else null
-            return ScanResult(ScanStatus.SEARCHING, null, false, upd.shift, snap, snap?.let(::orient), false, detectMs, 0.0, w, h)
+            // Sin tablero no se muestra ninguna posición: la fusión se conserva unos fotogramas por si
+            // vuelve (manos, reflejos), pero la interfaz no tiene que mostrar piezas viejas.
+            return ScanResult(ScanStatus.SEARCHING, null, false, upd.shift, null, null, false, detectMs, 0.0, w, h)
         }
 
         val q = quality.assess(gray, board, upd.motionSquares, upd.support)
@@ -105,7 +106,8 @@ class ScanPipeline(var classifier: SquareClassifier) {
                 QualityIssue.OCCLUDED -> ScanStatus.OCCLUDED
                 else -> ScanStatus.BLURRY
             }
-            return ScanResult(status, board, false, upd.shift, before.takeIf { it.frames > 0 }, orient(before), false, detectMs, 0.0, w, h)
+            val snap = before.takeIf { it.frames > 0 }
+            return ScanResult(status, board, false, upd.shift, snap, snap?.let(::orient), false, detectMs, 0.0, w, h)
         }
 
         val allConfident = before.frames > 0 && before.doubtfulCount == 0
