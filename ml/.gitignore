@@ -4,3 +4,6 @@ runs/
 .venv/
 *.err
 cache_videos.py
+res_jobs.py
+.venv-render/
+export_local/

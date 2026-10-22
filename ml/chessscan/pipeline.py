@@ -34,6 +34,10 @@ def build_model(arch: str = "mnv3s", dropout: float = 0.2) -> keras.Model:
         base = keras.applications.MobileNetV3Small(
             input_shape=(g.CROP_H, g.CROP_W, 3), include_top=False, weights="imagenet",
             include_preprocessing=True, minimalistic=False)
+    elif arch == "mnv3l":
+        base = keras.applications.MobileNetV3Large(
+            input_shape=(g.CROP_H, g.CROP_W, 3), include_top=False, weights="imagenet",
+            include_preprocessing=True, minimalistic=False)
     elif arch == "mnv3s_min":
         base = keras.applications.MobileNetV3Small(
             input_shape=(g.CROP_H, g.CROP_W, 3), include_top=False, weights="imagenet",
@@ -208,9 +212,10 @@ def main() -> None:
         hist = model.fit(
             Seq(tb, a.workers), epochs=a.epochs, validation_data=(xv.astype(np.float32), yv),
             validation_batch_size=256,
-            callbacks=[keras.callbacks.ModelCheckpoint(a.run / "model.keras", monitor="val_accuracy",
+            callbacks=[keras.callbacks.BackupAndRestore(str(a.run / "backup")),  # reanuda si se corta
+                       keras.callbacks.ModelCheckpoint(a.run / "model.keras", monitor="val_accuracy",
                                                        save_best_only=True),
-                       keras.callbacks.CSVLogger(a.run / "history.csv")],
+                       keras.callbacks.CSVLogger(a.run / "history.csv", append=True)],
             verbose=2)
         (a.run / "train_time_s.txt").write_text(f"{time.time() - t0:.0f}\n")
     model = keras.models.load_model(a.run / "model.keras")
