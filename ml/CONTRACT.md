@@ -119,7 +119,7 @@ Resultado: recorte RGB uint8 de **128 de alto × 64 de ancho**. La casilla propi
 
 El lote es fijo de 64. Si alguna vez hace falta otro tamaño, `Interpreter.resizeInput(0, [n, 128, 64, 3])` funciona, pero lo único verificado es 64.
 
-La cuantización (int8 o fp16 internos) es un detalle interno del `.tflite`: **la entrada y la salida son siempre float32**, así que Android no tiene que manejar escalas ni puntos cero. Qué cuantización tiene el archivo entregado está en `ml/RESULTS.md`.
+La cuantización (int8 o fp16 internos) es un detalle interno del `.tflite`: **la entrada y la salida son siempre float32**, así que Android no tiene que manejar escalas ni puntos cero. Qué cuantización tiene el archivo entregado está en `ml/RESULTS.md` (v1: fp16, 1,9 MB). Nombre del tensor de entrada: `serve_crops:0`; de salida: `StatefulPartitionedCall:0` (usar los índices 0, no los nombres).
 
 ## 5. Salida del modelo
 

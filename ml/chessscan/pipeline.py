@@ -102,11 +102,17 @@ def fit_temperature(logits: np.ndarray, y: np.ndarray) -> float:
 # --- export ----------------------------------------------------------------------
 
 def export_tflite(model: keras.Model, out: Path, rep: np.ndarray, mode: str) -> Path:
-    @tf.function(input_signature=[tf.TensorSpec([64, g.CROP_H, g.CROP_W, 3], tf.float32, name="crops")])
-    def serve(x):
-        return {"logits": model(x, training=False)}
-
-    conv = tf.lite.TFLiteConverter.from_concrete_functions([serve.get_concrete_function()], model)
+    # SavedModel con lote fijo de 64; from_concrete_functions deja los pesos como
+    # variables (READ_VARIABLE) con Keras 3, así que se pasa por un SavedModel.
+    sm = out / "saved_model"
+    if not sm.exists():
+        arch = keras.export.ExportArchive()
+        arch.track(model)
+        arch.add_endpoint(
+            name="serve", fn=lambda x: model(x, training=False),
+            input_signature=[tf.TensorSpec([64, g.CROP_H, g.CROP_W, 3], tf.float32, name="crops")])
+        arch.write_out(str(sm))
+    conv = tf.lite.TFLiteConverter.from_saved_model(str(sm), signature_keys=["serve"])
     if mode == "int8":
         conv.optimizations = [tf.lite.Optimize.DEFAULT]
 
@@ -207,6 +213,8 @@ def main() -> None:
     W, b = dense.get_weights()
     dense.set_weights([W / T, b / T])
     model.save(a.run / "model_calibrated.keras")
+    import shutil
+    shutil.rmtree(a.run / "saved_model", ignore_errors=True)
 
     xt, yt = all_crops(test)
     res = {"temperature": T, "keras": {"val": metrics(predict_logits(predict, xv), yv),
