@@ -51,15 +51,20 @@ def load_frames(video: Path, width: int, cache: Path | None) -> np.ndarray:
     return arr
 
 
-def track(frames, anchor: int, corners0: np.ndarray, order) -> dict[int, np.ndarray]:
+def track(frames, anchor: int, corners0: np.ndarray, order, max_miss: int = 30) -> dict[int, np.ndarray]:
     out = {anchor: corners0}
+    miss = 0
     tr = Tracker(cv2.cvtColor(np.asarray(frames[anchor]), cv2.COLOR_RGB2GRAY), corners0)
     for i in tqdm(order, desc="seguimiento"):
         img = np.asarray(frames[i])
         gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
         c, _ = tr.track(gray)
         if c is None:
-            break  # se perdió: no seguir más en esta dirección
+            miss += 1  # cuadro movido o tapado: se saltea y se sigue contra el último clave
+            if miss > max_miss:
+                break
+            continue
+        miss = 0
         c = refine(img, c, radius=4, iters=3, inner_only=True)
         tr._set_key(gray, c)  # el cuadro refinado pasa a ser el clave: sin deriva acumulada
         out[i] = c
