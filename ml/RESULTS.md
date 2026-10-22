@@ -2,7 +2,57 @@
 
 Fecha: 22‑10‑2026. Todo lo de esta página se midió en esta PC, salvo lo que se marca como medido por otro. Si algo no se midió, se dice.
 
-## Modelo entregado: v3
+## Modelo entregado: v5
+
+Mismo contrato v1, misma arquitectura, fp16, 1 916 920 bytes (SHA‑256 en `export/SHA256SUMS`). Métricas completas en `export/metrics_v5.json` y `export/video*_v5.json`.
+
+- **v4** = v3 + diagramas de libro sintéticos (`chessscan.synthbook`: 8000 diagramas, 15 sets tipo figurine, rayado, punteado o gris, foto de página y escaneo). 4 épocas × 750 lotes desde v3, 17 min.
+- **v5** = v4 + videos reales del usuario: el físico `VID_..._104414` (video1, completo) y `VID_..._132028` (video3), y la primera mitad del libro en el monitor (`VID_..._134155`, cuadros 0–899). 5 épocas × 750 lotes desde v4, 21 min.
+
+### Separación por video (sin la salvedad de «misma posición»)
+
+Los videos físicos `VID_..._132356` (video4, 1928 cuadros) y `VID_..._133425` (video5, 1031 cuadros) **no se usaron para entrenar**: son posiciones nuevas en el mismo tablero del usuario. Sus FEN se verificaron con el modelo antes de usarlos (`chessscan.verify_fen`). El de `132356` estaba escrito desde el lado de las negras; se usó el FEN girado 180° (`2k2b1r/1bp2p2/7p/6p1/Q7/2P1B2P/PPB2PPK/RN2q3`), que es el único que coincide con la imagen. Los tres videos físicos nuevos tienen el tablero entero en todos los cuadros.
+
+| Set (real, del usuario) | Modo | v4 | **v5** |
+|---|---|---|---|
+| Físico video4 (posición nueva) | 1 cuadro | 76,7 % (piezas 33,2 %) | **82,7 % (51,6 %)** |
+| | fusión 60 cuadros (1 s) | 78,4 % (37,0 %) | **84,2 % (54,6 %)** |
+| | fusión de todo el video | 82,8 % (47,6 %) | **90,6 % (71,4 %)** |
+| Físico video5 (posición nueva) | 1 cuadro | 77,0 % (34,6 %) | **82,8 % (52,2 %)** |
+| | fusión 60 cuadros | 78,1 % (37,2 %) | **84,2 % (55,6 %)** |
+| | fusión de todo el video | 82,8 % (47,6 %) | **89,1 % (66,7 %)** |
+| Libro en el monitor, cuadros 1000–1412 (misma posición que el train) | 1 cuadro | 94,4 % (87,9 %) | 94,5 % (88,4 %) |
+| | fusión de todo el tramo | 100 % | 100 % |
+| Lichess en el monitor (video2, no usado para entrenar) | 1 cuadro | 99,51 % | **99,95 %** |
+| Muestra de libro Alekhine (1 imagen, solo evaluación) | 1 cuadro | 62/64 | **64/64** |
+
+**Lectura honesta:**
+- **El tablero físico del usuario con posiciones nuevas está lejos de la meta.** Un cuadro da 83 % de casillas, pero solo la mitad de las piezas. Fusionando todo el video llega a ~90 %. El 98 % que daba el v3 era sobre la misma posición con la que se entrenó y **no se traslada** a posiciones nuevas (el v4, equivalente al v3 en esto, daba 77 % en video4/5).
+- Estos videos se filmaron desde ángulos muy rasantes: las piezas se ven muy alargadas y tapan las casillas vecinas. Es el caso más difícil para un clasificador por casilla.
+- Clases más débiles en video4/5 (recall por cuadro, v5): alfil negro 0,11, rey negro 0,11–0,23, peón negro 0,29–0,46, dama negra 0–0,62, alfil blanco 0,35. Las piezas **negras (marrones)** de este juego son las que peor se reconocen.
+- **2D y libros:** muy bien en lo real disponible, pero son pocas posiciones (una por video).
+- Lo que empeoró: el tablero ajeno de chesscog (27 fotos) baja de 86,5 % (v4) a 82,9 % (v5). El modelo se especializa en el tablero del usuario.
+
+### Resto de los sets (v3 → v4 → v5, fp16, 1 cuadro)
+
+| Set | v3 | v4 | v5 |
+|---|---|---|---|
+| 3D sintético (chesscog test) | 99,02 % | 99,06 % | 99,05 % |
+| ChessReD test | 97,08 % | 96,90 % | 96,84 % |
+| samryan18 test | 99,33 % | 99,35 % | 99,33 % |
+| Tablero ajeno (chesscog real) | 86,1 % | 86,5 % | 82,9 % |
+| 2D sintético, sets vistos / no vistos | 98,6 / 98,1 % | 98,7 / 98,1 % | 98,7 / 98,3 % |
+| Libro sintético, sets vistos | 90,7 % | 95,9 % | 96,2 % |
+| Libro sintético, sets **no vistos** (chessnut, staunty) | 88,1 % | 94,2 % | 94,6 % |
+
+### Detector con libros
+
+El clasificador ya no es el cuello de botella en los libros: en la muestra real da 64/64 con las esquinas correctas. Lo que falla en la app es el **detector**. Con rayado a ±45°, el histograma de ángulos elige la dirección del rayado y no la de la retícula. Diagnóstico y arreglo propuesto (apertura morfológica antes de Canny) en la nota a Android y en `testdata/books/`.
+
+---
+
+## Modelo anterior: v3
+
 
 v3 = v2 + ajuste fino con el **video del tablero físico del usuario** (`VID_20261022_104414`, una sola posición, 19 s, la cámara da la vuelta al tablero). Mismo contrato v1, misma arquitectura, fp16, 1 916 920 bytes, SHA‑256 en `export/SHA256SUMS`. Ajuste fino: 4 épocas × 500 lotes, lr 3e‑4, semilla 1234, desde `runs/v2/model.keras`. La mezcla de datos es ~39 % de cuadros del video del usuario y el resto, los datos del v2 (para no olvidarlos). Métricas en `export/metrics_v3.json` y `export/video1_v3.json`.
 
@@ -107,11 +157,13 @@ int8 pierde entre 1 y 6 puntos según el dominio (3D sintético 97,0 %, ChessReD
 | v1 | solo chesscog sintético | 99,33 % | 81,6 % | 75,2 % | 83,0 % | 73,5 % |
 | v1 + 2 fotos reales (experimento, no entregado) | + 2 fotos de chesscog real | 99,11 % | — | — | 94,7 % | — |
 | v2 | + 2D sintético, ChessReD, samryan18 | 99,05 % | 97,0 % | 99,4 % | 89,0 % | 98,3 % |
-| **v3** | + video del tablero del usuario | 99,02 % | 97,1 % | 99,3 % | 86,1 % | 98,1 % |
+| v3 | + video del tablero del usuario | 99,02 % | 97,1 % | 99,3 % | 86,1 % | 98,1 % |
+| v4 | + libros sintéticos | 99,06 % | 96,9 % | 99,35 % | 86,5 % | 98,1 % |
+| **v5** | + 2 videos físicos y 1 de libro del usuario | 99,05 % | 96,8 % | 99,33 % | 82,9 % | 98,3 % |
 
 ## Qué falta medir o mejorar
 
-0. **Otra posición en el tablero del usuario:** grabar un segundo video con otra posición (todas las piezas, incluidos los alfiles) para medir sin la salvedad de «misma posición en train y test» y sumar datos.
+0. **Más posiciones en el tablero del usuario, con piezas negras variadas (alfiles, damas, reyes negros) y desde ángulos menos rasantes.** Es lo que más falta. Antes: grabar un segundo video con otra posición (todas las piezas, incluidos los alfiles) para medir sin la salvedad de «misma posición en train y test» y sumar datos.
 
 1. **Validación real 2D:** el circuito automático propuesto (la PC muestra posiciones y el celular, apoyado, filma) daría cientos de posiciones reales etiquetadas. Hoy hay una sola captura.
 2. **Tablero propio del usuario:** el 89 % en un tablero nunca visto indica que el ajuste fino con fotos del tablero real (`chessscan.autolabel`, o fotos sueltas) sigue valiendo la pena.

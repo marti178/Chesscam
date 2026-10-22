@@ -122,6 +122,18 @@ python -m chessscan.pipeline --run runs/v2 --data data/prepared --init runs/v1_c
 python -m chessscan.pipeline --run runs/v3 --data data/prepared --init runs/v2/model.keras --epochs 4 --steps 500 --lr 3e-4 --seed 1234   --extra data/real/video1_train:1.2 data/prepared2d_tex/train:0.3 data/prepared2d_tex_b/train:0.2 data/prepared2d/train:0.2 data/prepared_chessred/train:0.8 data/prepared_samryan/train:0.2   --val-extra data/prepared2d_tex/val data/prepared_chessred/val   --eval-real data/real/video1_test data/prepared_real/test data/prepared_chessred/test data/prepared_samryan/test data/prepared2d_tex/test data/prepared2d_tex/test_heldout
 ```
 
+**v4** (libros sintéticos) y **v5** (videos del usuario). Datos: `python -m chessscan.synthbook --out data/preparedbook --seed 11` y `--out data/preparedbook_b --seed 12 --n 2000 0 0 0 --splits train`; videos con `autolabel_video` (anclas en el historial de commits), verificados con `python -m chessscan.verify_fen`.
+
+```bash
+python -m chessscan.pipeline --run runs/v4 --data data/prepared --init runs/v3/model.keras --epochs 4 --steps 750 --lr 3e-4 --seed 1234 \
+  --extra data/preparedbook/train:0.45 data/preparedbook_b/train:0.45 data/real/video1_train:0.8 data/prepared2d_tex/train:0.3 data/prepared2d_tex_b/train:0.2 data/prepared2d/train:0.2 data/prepared_chessred/train:0.8 data/prepared_samryan/train:0.2 \
+  --val-extra data/prepared2d_tex/val data/prepared_chessred/val data/preparedbook/val
+python -m chessscan.pipeline --run runs/v5 --data data/prepared --init runs/v4/model.keras --epochs 5 --steps 750 --lr 3e-4 --seed 1234 \
+  --extra data/real/video1:0.5 data/real/video3:0.8 data/real/video6book_train:0.3 data/preparedbook/train:0.35 data/preparedbook_b/train:0.3 data/prepared2d_tex/train:0.3 data/prepared2d_tex_b/train:0.2 data/prepared2d/train:0.15 data/prepared_chessred/train:0.8 data/prepared_samryan/train:0.2 \
+  --val-extra data/prepared2d_tex/val data/prepared_chessred/val data/preparedbook/val \
+  --eval-real data/real/video4 data/real/video5 data/real/video6book_test data/real/video2 data/prepared_book_real/test
+```
+
 Con datos reales propios (recomendado; mezcla 1 tablero real cada ~3 sintéticos):
 
 ```bash

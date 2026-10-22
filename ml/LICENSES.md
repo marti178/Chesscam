@@ -43,6 +43,8 @@ Texturas de tablero: `lila/public/images/board/*` (blue-marble, blue, blue2, blu
 
 No usados: los sets de piezas AGPL (letter, pirouetti, pixel), los «freeware» o «solo uso personal» sin texto de licencia claro (alpha, chess7, companion, leipzig), los que no tienen licencia indicada (reillycraig, riohacha), shahi (prohíbe derivados), disguised (piezas disfrazadas, confunde las etiquetas), mono (ambos colores iguales), shapes, kiwen‑suwi y xkcd (no figurativos), y monarchy y Firi (no están en SVG). Los sets de chess.com son propietarios y no se usan. Que el uso de imágenes GPL como datos de entrenamiento haga del modelo una obra derivada es jurídicamente dudoso; como el modelo ya queda CC BY‑NC‑SA por ChessReD y no se vende, se aceptó. Si algún día se quiere un modelo comercial, hay que reentrenar sin ChessReD y sin los sets GPL/NC.
 | Videos propios grabados con `chessscan.autolabel` | del usuario | — | Para adaptar el modelo al tablero real. |
+| `VID_20261022_132028`, `_132356`, `_133425` (tablero físico, otras posiciones) | del usuario | 22‑10‑2026 | 132028 en el entrenamiento del v5; 132356 y 133425 solo como test. No se suben. |
+| `VID_20261022_134155.mp4` (PDF del «Tratado general de ajedrez» en el monitor) | **con copyright** (libro) | 22‑10‑2026 | Uso personal local: cuadros 0–899 en el entrenamiento del v5 y 1000–1412 como test. No se suben cuadros. |
 | `VID_20261022_104414.mp4` (tablero físico) y `VID_20261022_105447.mp4` (Lichess en el monitor), grabados por el usuario | del usuario | 22‑10‑2026 | El físico se usa en el entrenamiento del v3 (cuadros 0–679) y en el test (740–1135); el 2D solo para validar. No se suben al repo. |
 
 ## Pesos y código
