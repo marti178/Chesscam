@@ -160,6 +160,15 @@ camino completo PNG → recorte con OpenCV Android → modelo. Los vectores van 
   de la cámara, da el mismo tablero en **76/76**. Ojo: las etiquetas de esas fotos salieron del propio detector
   y se revisaron a ojo sobre la retícula dibujada; no son una anotación independiente.
 - Tiempo del detector en la PC: ~10–20 ms por imagen de 640 px (en el Xiaomi, 11,5 ms).
+- **Diagramas de libro** (`eval/books`, 12 sintéticos con esquinas exactas: casillas rayadas, texto alrededor, marco
+  doble, curvatura): **10/12** bien (antes 1/12). Lo que cambió en `BoardDetector`: se prueban los pares entre los 3
+  picos más altos del histograma de ángulos (el rayado a ±45° puede ganarle a la retícula); si el resultado no tiene
+  soporte ≥ 0,6 y damero marcado, se reintenta con una apertura morfológica (3, 5 y 7 px) antes de Canny; los
+  candidatos se comparan por cruces confirmados × contraste del damero; la ventana 8×8 puede correrse 1 casilla más
+  allá de lo observado y pesa los cruces que caen adentro; y se exige un soporte mínimo de 0,35. Fallan book_05
+  (0,39 casillas de error, apenas sobre la tolerancia, página curvada y muy de costado) y book_08 (tablero chico, las
+  líneas de texto desplazan las horizontales). Las 19 fotos siguen 19/19 y 76/76, a ~20 ms en la PC.
+  `BooksDetectorTest` exige ≥ 10/12.
 
 ## Limitaciones conocidas
 
@@ -169,6 +178,7 @@ camino completo PNG → recorte con OpenCV Android → modelo. Los vectores van 
 - Sin tablero detectado, el tablero digital se muestra vacío y atenuado («Sin posición»); la fusión se conserva hasta 15 fotogramas por si el tablero vuelve, y después se reinicia.
 - Umbrales del control de calidad (nitidez 40, tamaño 35 % del lado menor, ángulo 0,45, movimiento 0,25 casillas/fotograma) puestos a ojo; hay que ajustarlos con fotogramas reales del teléfono.
 - La retícula se dibuja suponiendo que la vista previa (`FIT_CENTER`) y el análisis 4:3 tienen el mismo campo visual; en algunos teléfonos puede quedar corrida unos píxeles.
+- Sin tablero a la vista, o con un diagrama difícil, el detector prueba hasta 4 variantes por fotograma (en la PC, hasta ~150 ms con imágenes de 1280 px). Falta medir ese caso en el teléfono (`PipelineBenchmarkTest` ya tiene «detector sin tablero» y «detector diagrama de libro»).
 - El detector necesita ver una buena parte de las líneas del damero; tableros sin contraste entre casillas, muy tapados o muy de costado (cociente de lados < 0,45) no se detectan o se rechazan.
 - Si el tablero se pierde más de 15 fotogramas seguidos, o la nueva detección cae a más de 1,5 casillas de la anterior, se reinicia la fusión.
 - La orientación usa heurísticas (a1 oscura por luminancia, filas, peones). Con pocas piezas, o casillas de poco contraste, queda «dudosa» y hay que usar «Girar».

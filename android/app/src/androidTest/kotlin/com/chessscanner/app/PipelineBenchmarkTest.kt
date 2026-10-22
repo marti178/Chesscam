@@ -61,6 +61,19 @@ class PipelineBenchmarkTest {
         val detector = BoardDetector()
         val det = checkNotNull(detector.detect(gray)) { "no detectó el tablero" }
         report("detector (completo)") { detector.detect(gray) }
+        // Sin tablero: el peor caso, porque prueba todas las variantes (apertura morfológica, pares de picos).
+        val noise = Mat(gray.rows(), gray.cols(), gray.type())
+        org.opencv.core.Core.randn(noise, 128.0, 30.0)
+        Imgproc.GaussianBlur(noise, noise, Size(3.0, 3.0), 0.0)
+        report("detector sin tablero") { detector.detect(noise) }
+        if (testAssets.list("golden")?.contains("book") == true) {
+            val bb = BitmapFactory.decodeStream(testAssets.open("golden/book/image.jpg"))
+            val m = Mat().also { Utils.bitmapToMat(bb, it) }
+            val bg = Mat().also { Imgproc.cvtColor(m, it, Imgproc.COLOR_RGBA2GRAY) }
+            val kb = 640.0 / max(bg.cols(), bg.rows())
+            val bs = Mat().also { Imgproc.resize(bg, it, Size(), kb, kb, Imgproc.INTER_AREA) }
+            report("detector diagrama de libro") { detector.detect(bs) }
+        }
 
         val tracker = BoardTracker()
         tracker.update(gray)

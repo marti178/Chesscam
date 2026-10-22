@@ -120,7 +120,10 @@ class VisionTest {
         val (rgb2, _) = scene(flatBoard(false), small)
         val g2 = gray(rgb2)
         val det2 = BoardDetector().detect(g2)
-        if (det2 != null) assertEquals(QualityIssue.TOO_SMALL, FrameQuality().assess(g2, det2, 0.0, 1.0).issue)
+        if (det2 != null) {
+            println("pequeño: " + det2.corners + " soporte " + det2.support + " damero " + det2.checker + " error " + BoardMetrics.cornerErrorSquares(det2.corners, small))
+            assertEquals(QualityIssue.TOO_SMALL, FrameQuality().assess(g2, det2, 0.0, 1.0).issue)
+        }
         val (rgb3, _) = scene(flatBoard(false), TILTED)
         val g3 = gray(rgb3)
         assertEquals(QualityIssue.NONE, FrameQuality().assess(g3, BoardDetector().detect(g3)!!, 0.0, 1.0).issue)

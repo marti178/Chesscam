@@ -101,11 +101,19 @@ fun main(args: Array<String>) {
         if (det != null) for (rot in 0..3) {
             val turned = rotated(gray, rot, 640.0)
             val d2 = detector.detect(turned.first)
-            turned.first.release()
             consistencyTotal++
             val back = d2?.corners?.map(turned.second)
-            if (back != null && BoardMetrics.cornerErrorSquares(back, det.corners) <= TOLERANCE_SQUARES) consistencyOk++
-            else println("  inconsistente: ${f.name} girada ${rot * 90}° a 640 px")
+            if (back != null && BoardMetrics.cornerErrorSquares(back, det.corners) <= TOLERANCE_SQUARES) {
+                consistencyOk++
+            } else {
+                println("  inconsistente: ${f.name} girada ${rot * 90}° a 640 px")
+                val color = Mat()
+                Imgproc.cvtColor(turned.first, color, Imgproc.COLOR_GRAY2BGR)
+                drawOverlay(color, d2, null)
+                Imgcodecs.imwrite(File(out, "${f.nameWithoutExtension}_giro${rot * 90}.jpg").path, color)
+                color.release()
+            }
+            turned.first.release()
         }
         drawOverlay(img, det, label)
         Imgcodecs.imwrite(File(out, f.nameWithoutExtension + "_det.jpg").path, img)

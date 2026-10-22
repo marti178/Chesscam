@@ -70,7 +70,7 @@ dependencies {
 val goldenAssets = layout.buildDirectory.dir("golden-assets")
 val syncGoldenAssets by tasks.registering(Sync::class) {
     (findProperty("goldenDir") as String?)?.let { dir ->
-        from(dir) { include("*/case.json", "*/image.png", "*/input_u8.bin", "*/output_logits_f32.bin") }
+        from(dir) { include("*/case.json", "*/image.png", "*/image.jpg", "*/input_u8.bin", "*/output_logits_f32.bin") }
     }
     into(goldenAssets.map { it.dir("golden") })
 }

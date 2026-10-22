@@ -65,6 +65,16 @@ data class DetectorParams(
     val minInliers: Int = 16,
     /** Contraste mínimo del damero (niveles de gris) para aceptar el tablero. */
     val minChecker: Double = 6.0,
+    /** Picos del histograma de ángulos que se combinan de a pares. */
+    val anglePeaks: Int = 3,
+    /** Con este soporte (fracción de los 81 cruces) no se prueban más variantes. */
+    val goodSupport: Double = 0.6,
+    /** Lados de la apertura morfológica para los reintentos (diagramas rayados), a la resolución de trabajo. */
+    val openKernels: List<Int> = listOf(3, 5, 7),
+    /** Contraste del damero a partir del cual no se castiga a un candidato. */
+    val fullChecker: Double = 40.0,
+    /** Fracción mínima de los 81 cruces confirmada por líneas para aceptar un tablero. */
+    val minSupport: Double = 0.35,
 )
 
 /**
@@ -98,7 +108,34 @@ class BoardDetector(val params: DetectorParams = DetectorParams()) {
         }
     }
 
+    /**
+     * Primero el camino normal; si no da una retícula bien apoyada, reintenta con una apertura
+     * morfológica antes de los bordes (rellena el rayado de las casillas oscuras de los diagramas de
+     * libro, que si no forma rectas diagonales largas que le ganan a la retícula). Gana el candidato con
+     * más cruces de la retícula confirmados.
+     */
     private fun detectWorking(g: Mat): BoardDetection? {
+        val first = detectWith(g, 0)
+        if (first != null && isGood(first)) return first
+        var best = first
+        for (k in params.openKernels) {
+            val c = detectWith(g, k) ?: continue
+            if (best == null || quality(c) > quality(best) + 1e-9) best = c
+            if (isGood(c)) break
+        }
+        // Con tantas variantes alguna retícula espuria puede pasar: se exige un mínimo de cruces confirmados.
+        return best?.takeIf { it.support >= params.minSupport }
+    }
+
+    /**
+     * Puntaje para elegir entre candidatos: cruces confirmados, castigando el damero poco marcado (las
+     * líneas de texto alrededor de un diagrama pueden formar una «retícula» sin casillas alternadas).
+     */
+    private fun quality(d: BoardDetection) = d.support * min(1.0, d.checker / params.fullChecker)
+
+    private fun isGood(d: BoardDetection) = d.support >= params.goodSupport && d.checker >= params.fullChecker / 2
+
+    private fun detectWith(g: Mat, openKernel: Int): BoardDetection? {
         val w = g.cols()
         val h = g.rows()
         val diag = hypot(w.toDouble(), h.toDouble())
@@ -107,7 +144,14 @@ class BoardDetector(val params: DetectorParams = DetectorParams()) {
         val linesMat = Mat()
         val lines: List<Line>
         try {
-            Imgproc.GaussianBlur(g, blurred, Size(5.0, 5.0), 0.0)
+            if (openKernel > 0) {
+                val kernel = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, Size(openKernel.toDouble(), openKernel.toDouble()))
+                Imgproc.morphologyEx(g, blurred, Imgproc.MORPH_OPEN, kernel)
+                kernel.release()
+                Imgproc.GaussianBlur(blurred, blurred, Size(5.0, 5.0), 0.0)
+            } else {
+                Imgproc.GaussianBlur(g, blurred, Size(5.0, 5.0), 0.0)
+            }
             Imgproc.Canny(blurred, edges, params.cannyLow, params.cannyHigh)
             val threshold = max(30, (params.houghFraction * min(w, h)).roundToInt())
             Imgproc.HoughLines(edges, linesMat, 1.0, PI / 360, threshold)
@@ -123,7 +167,17 @@ class BoardDetector(val params: DetectorParams = DetectorParams()) {
         }
         if (lines.size < 6) return null
 
-        val (famA, famB) = splitFamilies(lines) ?: return null
+        // Se prueban los pares entre los picos de ángulo más altos: en los diagramas rayados uno de los
+        // dos picos principales puede ser la dirección del rayado.
+        var best: BoardDetection? = null
+        for ((famA, famB) in splitFamilies(lines)) {
+            val c = fitFamilies(g, famA, famB, w, h, diag) ?: continue
+            if (best == null || quality(c) > quality(best) + 1e-9) best = c
+        }
+        return best
+    }
+
+    private fun fitFamilies(g: Mat, famA: List<Line>, famB: List<Line>, w: Int, h: Int, diag: Double): BoardDetection? {
         val a = dedupe(famA, famB, w, h, params.mergeFraction * diag)
         val b = dedupe(famB, famA, w, h, params.mergeFraction * diag)
         if (a.size < 3 || b.size < 3) return null
@@ -157,8 +211,12 @@ class BoardDetector(val params: DetectorParams = DetectorParams()) {
         return BoardDetection.fromCorners(Quad.contractOrder(corners), inWindow / 81.0, checker)
     }
 
-    /** Separa las líneas en dos familias de orientación (por picos del histograma de ángulos). */
-    private fun splitFamilies(lines: List<Line>): Pair<List<Line>, List<Line>>? {
+    /**
+     * Pares de familias de orientación: picos del histograma de ángulos (hasta [DetectorParams.anglePeaks],
+     * separados al menos 12°), combinados de a dos si están a ≥ 35°. El primer par es el de los dos picos
+     * más altos, como antes.
+     */
+    private fun splitFamilies(lines: List<Line>): List<Pair<List<Line>, List<Line>>> {
         val bins = 180
         val hist = DoubleArray(bins)
         for (l in lines) {
@@ -166,18 +224,27 @@ class BoardDetector(val params: DetectorParams = DetectorParams()) {
             val weight = 1.0 / (1 + l.rank / 20.0)
             for (d in -3..3) hist[((deg.toInt() + d) % bins + bins) % bins] += weight * (4 - abs(d))
         }
-        val p1 = hist.indices.maxBy { hist[it] }
-        val p2 = hist.indices.filter { angDist(it.toDouble(), p1.toDouble()) >= 35 }.maxByOrNull { hist[it] } ?: return null
-        val tol = params.familyToleranceDeg
-        val fa = ArrayList<Line>()
-        val fb = ArrayList<Line>()
-        for (l in lines) {
-            val deg = (((l.theta * 180 / PI) % 180) + 180) % 180
-            val d1 = angDist(deg, p1.toDouble())
-            val d2 = angDist(deg, p2.toDouble())
-            if (d1 <= d2 && d1 <= tol) fa += l else if (d2 < d1 && d2 <= tol) fb += l
+        val peaks = ArrayList<Int>()
+        for (bin in hist.indices.sortedByDescending { hist[it] }) {
+            if (hist[bin] <= 0 || peaks.size >= params.anglePeaks) break
+            if (peaks.all { angDist(bin.toDouble(), it.toDouble()) >= 12 }) peaks += bin
         }
-        return fa to fb
+        val pairs = ArrayList<Pair<Int, Int>>()
+        for (i in peaks.indices) for (j in i + 1 until peaks.size) {
+            if (angDist(peaks[i].toDouble(), peaks[j].toDouble()) >= 35) pairs += peaks[i] to peaks[j]
+        }
+        val tol = params.familyToleranceDeg
+        return pairs.map { (p1, p2) ->
+            val fa = ArrayList<Line>()
+            val fb = ArrayList<Line>()
+            for (l in lines) {
+                val deg = (((l.theta * 180 / PI) % 180) + 180) % 180
+                val d1 = angDist(deg, p1.toDouble())
+                val d2 = angDist(deg, p2.toDouble())
+                if (d1 <= d2 && d1 <= tol) fa += l else if (d2 < d1 && d2 <= tol) fb += l
+            }
+            fa to fb
+        }
     }
 
     private fun angDist(a: Double, b: Double): Double {
@@ -328,7 +395,9 @@ class BoardDetector(val params: DetectorParams = DetectorParams()) {
             if (n < 13) null else sum / n
         }
 
-        fun uRange(lo: Int, hi: Int): IntRange = min(lo, hi - 8)..max(lo, hi - 8)
+        // Se deja correr la ventana hasta 2 casillas más allá de lo observado: con casillas rayadas o
+        // tapadas puede no haber cruces en las primeras columnas o filas.
+        fun uRange(lo: Int, hi: Int): IntRange = min(lo, hi - 8) - EXT..max(lo, hi - 8) + EXT
         var best: Triple<Int, Int, Double>? = null
         var bestScore = Double.NEGATIVE_INFINITY
         for (u0 in uRange(umin, umax)) for (v0 in uRange(vmin, vmax)) {
@@ -351,7 +420,10 @@ class BoardDetector(val params: DetectorParams = DetectorParams()) {
             val ring = if (nRing > 0) sRing / nRing else 0.0
             // Signo: el ring "continúa" el damero si alterna igual que adentro.
             val cont = if (sIn >= 0) ring else -ring
-            val score = abs(sIn) * sqrt(inside.size / 64.0) - 0.7 * max(0.0, cont)
+            // Suma sobre las 64 casillas (las que no se ven cuentan 0): una ventana que se sale de la imagen pierde.
+            // Y pesa cuántos cruces confirmados caen adentro: una ventana corrida sobre el piso o el texto no tiene.
+            val crossings = inliers.count { (u, v, _) -> u in u0..u0 + 8 && v in v0..v0 + 8 } / 81.0
+            val score = (abs(sIn) * inside.size / 64.0 - 0.7 * max(0.0, cont)) * (0.5 + 0.5 * crossings)
             if (score > bestScore) {
                 bestScore = score
                 best = Triple(u0, v0, abs(sIn) * 2) // diferencia media clara − oscura
@@ -360,3 +432,5 @@ class BoardDetector(val params: DetectorParams = DetectorParams()) {
         return best
     }
 }
+
+private const val EXT = 1
