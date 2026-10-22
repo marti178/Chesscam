@@ -75,6 +75,8 @@ data class DetectorParams(
     val fullChecker: Double = 40.0,
     /** Fracción mínima de los 81 cruces confirmada por líneas para aceptar un tablero. */
     val minSupport: Double = 0.35,
+    /** En la primera pasada, soporte con el que el primer par de ángulos alcanza y no se prueban los demás. */
+    val earlyExitSupport: Double = 0.6,
 )
 
 /**
@@ -173,6 +175,8 @@ class BoardDetector(val params: DetectorParams = DetectorParams()) {
         for ((famA, famB) in splitFamilies(lines)) {
             val c = fitFamilies(g, famA, famB, w, h, diag) ?: continue
             if (best == null || quality(c) > quality(best) + 1e-9) best = c
+            // Caso común (fotos): en la primera pasada, si el primer par ya da una retícula buena, alcanza.
+            if (openKernel == 0 && best === c && c.support >= params.earlyExitSupport && isGood(c)) break
         }
         return best
     }

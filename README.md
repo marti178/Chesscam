@@ -54,18 +54,22 @@ tiene una confianza. El detector y el clasificador se pueden probar en la PC con
 ## Estado
 
 Versión de desarrollo (APK debug), probada en un solo teléfono, de gama alta: Xiaomi 24122RKC7G, Snapdragon 8 Elite,
-Android 16. El modelo incluido es el **v3**.
+Android 16. El modelo incluido es el **v5**.
 
 Precisión del clasificador por casilla (casillas bien clasificadas sobre el total), según
 [`ml/RESULTS.md`](ml/RESULTS.md):
 
 | Set | Un fotograma | Con fusión |
 |---|---|---|
-| Tablero físico del usuario (otro tramo del mismo video; **misma posición** que en el ajuste fino) | 97,8 % | 98,4 % (63/64) |
-| Lichess en un monitor, filmado (542 cuadros, no usado para entrenar) | 99,86 % | 100 % |
-| ChessReD (fotos reales de celulares) | 97,1 % | — |
-| Fotos de un tablero de madera nunca visto (chesscog) | 86,1 % | — |
-| Diagramas 2D sintéticos con sets de piezas no vistos | 98,1 % | — |
+| Tablero físico del usuario, **posiciones nuevas** (2 videos no usados para entrenar) | 82,7–82,8 % | 89,1–90,6 % (todo el video) |
+| Lichess en un monitor, filmado (no usado para entrenar) | 99,95 % | — |
+| Diagrama de libro real (Alekhine, 1 imagen) | 64/64 | — |
+| Diagramas de libro sintéticos con sets de piezas no vistos | 94,6 % | — |
+| ChessReD (fotos reales de celulares) | 96,8 % | — |
+| Fotos de un tablero de madera nunca visto (chesscog) | 82,9 % | — |
+
+En el tablero físico la mitad de las piezas todavía se clasifica mal en un fotograma (las negras son las peores), así
+que hay que revisar la posición al congelar. Las pantallas y los libros andan mucho mejor.
 
 Detección del tablero (ver [`android/README.md`](android/README.md)): 19/19 fotos de prueba y 10/12 diagramas de libro
 sintéticos.
@@ -99,8 +103,8 @@ Tiempos en el Xiaomi: unos 29 ms por fotograma clasificando (23 ms el modelo), y
 ## Limitaciones conocidas
 
 - Probada en un solo teléfono, de gama alta; en uno de gama media va a ser más lenta.
-- La precisión depende mucho del tablero: en uno que el modelo nunca vio, alrededor de 86–89 % por casilla en un
-  fotograma. Los números altos del tablero del usuario se midieron con la misma posición con la que se ajustó el modelo.
+- En tableros físicos la precisión todavía es baja: ~83 % por casilla en un fotograma (solo la mitad de las piezas)
+  en el tablero del usuario con posiciones nuevas, ~90 % fusionando, y 83 % en un tablero que el modelo nunca vio.
   Conviene revisar siempre la posición al congelar.
 - La confusión más común es dama ↔ rey del mismo color (la app marca esas casillas como dudosas).
 - La orientación (de qué lado juegan las blancas) es heurística; con pocas piezas puede equivocarse, y se corrige con
