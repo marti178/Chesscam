@@ -1,0 +1,43 @@
+{
+ "model": "chess_square_classifier_fp16.tflite",
+ "frames": [
+  1000,
+  1407
+ ],
+ "n_frames": 403,
+ "ventana_1": {
+  "square_acc": 0.9453706575682382,
+  "occupied_acc": 0.8835401157981803,
+  "squares_evaluated": 25792
+ },
+ "ventana_30": {
+  "square_acc": 0.9575,
+  "occupied_acc": 0.9093333333333333,
+  "squares_evaluated": 1600
+ },
+ "ventana_60": {
+  "square_acc": 0.9739583333333334,
+  "occupied_acc": 0.9444444444444444,
+  "squares_evaluated": 768
+ },
+ "todo_el_tramo": {
+  "square_acc": 1.0,
+  "occupied_acc": 1.0,
+  "squares_evaluated": 64
+ },
+ "per_class_recall_1frame": {
+  "empty": 0.9999270179535834,
+  "P": 0.8525345622119815,
+  "N": 0.9516129032258065,
+  "B": 0.8287841191066998,
+  "R": 0.9789081885856079,
+  "Q": 0.8287841191066998,
+  "K": 0.8287841191066998,
+  "p": 0.8964906061680256,
+  "n": 0.9863523573200993,
+  "b": 0.8287841191066998,
+  "r": 0.8995037220843672,
+  "q": 0.8287841191066998,
+  "k": 0.8287841191066998
+ }
+}
