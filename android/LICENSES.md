@@ -15,12 +15,17 @@ Dependencias que van dentro del APK o se usan para compilar/probar `android/`. (
 
 ## Modelo dentro del APK
 
-`app/src/main/assets/chess_square_classifier.tflite` (de `ml/export/`, ver `ml/LICENSES.md`): derivado de pesos
-MobileNetV3‑Small de ImageNet (Apache 2.0), entrenado con datos CC BY 4.0. Atribución obligatoria, que la app
-muestra en «Créditos»:
+`app/src/main/assets/chess_square_classifier.tflite` **v2** (de `ml/export/`, commit a7e4bb4, ver `ml/LICENSES.md`).
+**Se distribuye bajo CC BY‑NC‑SA 4.0 (por ChessReD): solo uso no comercial**, y los derivados con la misma licencia.
+El usuario lo aceptó para una app personal y gratuita (22‑10‑2026). Por eso **el APK con este modelo no puede venderse
+ni publicarse con fines comerciales**; para eso hay que reentrenar solo con fuentes libres (ver `ml/LICENSES.md`).
+Atribución obligatoria, que la app muestra en «Créditos»:
 
-> Entrenado con «Dataset of Rendered Chess Game State Images» de Georg Wölflein y Ognjen Arandjelović (2021),
-> https://osf.io/xf3ka/, CC BY 4.0.
+> Modelo entrenado con: «Dataset of Rendered Chess Game State Images» de G. Wölflein y O. Arandjelović (2021,
+> https://osf.io/xf3ka/, CC BY 4.0); «Chess Recognition Dataset (ChessReD)» de A. Masouris y J. van Gemert (2023,
+> 4TU.ResearchData, DOI 10.4121/99b5c721-280b-450b-b058-b2900b69a90f, CC BY‑NC‑SA 4.0); «chess-dataset» de S. Ryan,
+> M. Venkateswaran, K. Convey y M. Deng (2019, MIT); y sets de piezas y tableros de Lichess (lila, lichess-org; autores
+> y licencias en `ml/LICENSES.md`). Este modelo se distribuye bajo CC BY‑NC‑SA 4.0.
 
 Los vectores dorados (render derivado del mismo dataset) van solo en el APK de test, y solo si se pasa `-PgoldenDir`.
 

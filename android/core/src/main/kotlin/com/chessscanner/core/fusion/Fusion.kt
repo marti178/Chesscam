@@ -19,6 +19,11 @@ data class FusionConfig(
     val changeFrames: Int = 8,
     /** Tiempo con las 64 casillas confiables para declarar la posición estable. */
     val stableMs: Long = 1000,
+    /**
+     * Dama ↔ rey del mismo color es la confusión más común del modelo: si la casilla dice una y la otra
+     * tiene al menos esta probabilidad, queda dudosa aunque supere [confidenceThreshold].
+     */
+    val queenKingMinOther: Double = 0.03,
 )
 
 /** Estado fusionado. Índices en coordenadas del tablero (ver [BoardFrame]). */
@@ -115,9 +120,15 @@ class FusionEngine(val config: FusionConfig = FusionConfig()) {
         return p[k]
     }
 
-    private fun isConfident(i: Int): Boolean =
-        committed[i] >= 0 && argmax(acc[i]) == committed[i] && evidence[i] >= config.minEvidence &&
-            confidenceOf(i) >= config.confidenceThreshold
+    private fun isConfident(i: Int): Boolean {
+        val k = committed[i]
+        if (k < 0 || argmax(acc[i]) != k || evidence[i] < config.minEvidence) return false
+        val p = DoubleArray(Piece.COUNT)
+        posterior(i, p)
+        if (p[k] < config.confidenceThreshold) return false
+        val sibling = QUEEN_KING[Piece.fromIndex(k)] ?: return true
+        return p[sibling.ordinal] < config.queenKingMinOther
+    }
 
     fun snapshot(timestampMs: Long = lastTimestamp): FusionSnapshot {
         val since = confidentSince
@@ -131,6 +142,10 @@ class FusionEngine(val config: FusionConfig = FusionConfig()) {
     }
 
     companion object {
+        private val QUEEN_KING = mapOf(
+            Piece.WQ to Piece.WK, Piece.WK to Piece.WQ, Piece.BQ to Piece.BK, Piece.BK to Piece.BQ,
+        )
+
         fun logSoftmax(x: FloatArray, out: DoubleArray) {
             var m = Double.NEGATIVE_INFINITY
             for (v in x) m = max(m, v.toDouble())

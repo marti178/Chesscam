@@ -84,6 +84,27 @@ class FusionTest {
         assertTrue(f.snapshot().doubtfulCount > 0)
     }
 
+    @Test fun queenKingCloseCallStaysDoubtful() {
+        // La casilla 3 dice dama blanca con 0,66 y la segunda opción tiene 0,30.
+        fun run(second: Piece): Boolean {
+            val f = FusionEngine()
+            repeat(40) { n ->
+                val logits = frame(truth)
+                logits[3] = FloatArray(Piece.COUNT) { c ->
+                    kotlin.math.ln(when (c) { Piece.WQ.ordinal -> 0.66; second.ordinal -> 0.30; else -> 0.04 / 11 }).toFloat()
+                }
+                f.addFrame(logits, 1.0, null, n * 50L)
+            }
+            val s = f.snapshot()
+            assertEquals(Piece.WQ, s.labels[3])
+            assertTrue("confianza ${s.confidence[3]}", s.confidence[3] >= 0.9)
+            return s.confident[3]
+        }
+        // Con una torre como segunda opción alcanza; con el rey del mismo color, queda marcada.
+        assertTrue(run(Piece.WR))
+        assertFalse(run(Piece.WK))
+    }
+
     @Test fun resetForgetsEverything() {
         val f = FusionEngine()
         repeat(10) { f.addFrame(frame(truth), 1.0, null, it * 50L) }

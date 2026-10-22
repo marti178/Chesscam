@@ -129,9 +129,12 @@ private fun CreditsButton() {
         title = { Text("Créditos") },
         text = {
             Text(
-                "El clasificador de piezas fue entrenado con «Dataset of Rendered Chess Game State Images» de " +
-                    "Georg Wölflein y Ognjen Arandjelović (2021), https://osf.io/xf3ka/, licencia CC BY 4.0, " +
-                    "a partir de pesos de MobileNetV3 (ImageNet, Apache 2.0).\n\n" +
+                "Modelo entrenado con: «Dataset of Rendered Chess Game State Images» de G. Wölflein y " +
+                    "O. Arandjelović (2021, https://osf.io/xf3ka/, CC BY 4.0); «Chess Recognition Dataset (ChessReD)» " +
+                    "de A. Masouris y J. van Gemert (2023, 4TU.ResearchData, DOI 10.4121/99b5c721-280b-450b-b058-b2900b69a90f, " +
+                    "CC BY-NC-SA 4.0); «chess-dataset» de S. Ryan, M. Venkateswaran, K. Convey y M. Deng (2019, MIT); " +
+                    "y sets de piezas y tableros de Lichess (lila, lichess-org). A partir de pesos de MobileNetV3 " +
+                    "(ImageNet, Apache 2.0). Este modelo se distribuye bajo CC BY-NC-SA 4.0: solo uso no comercial.\n\n" +
                     "El recorte de casillas sigue la idea de chesscog (Wölflein y Arandjelović, MIT).\n\n" +
                     "Usa OpenCV, LiteRT, CameraX y Jetpack Compose (Apache 2.0). Todo se procesa en el teléfono, sin conexión.",
                 fontSize = 14.sp,

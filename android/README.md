@@ -3,7 +3,8 @@
 Implementación de la parte Android de [`SPEC.md`](../SPEC.md): cámara en vivo → tablero → 64 casillas →
 clasificador → fusión temporal → orientación → FEN → Lichess. Todo offline; el único permiso es `CAMERA`.
 
-> **Estado (22‑10‑2026):** compila, tests verdes, APK debug con el modelo v1 de `ml/`, instalado y medido en
+> **Estado (22‑10‑2026):** compila, tests verdes, APK debug con el modelo **v2** de `ml/` (licencia **CC BY‑NC‑SA 4.0,
+> solo uso no comercial**), instalado y medido en
 > **un** teléfono (Xiaomi 24122RKC7G, Snapdragon 8 Elite, gama alta: **no representa la gama media de la SPEC**).
 > Todavía no se midió la precisión con el tablero real del usuario.
 
@@ -12,8 +13,11 @@ clasificador → fusión temporal → orientación → FEN → Lichess. Todo off
 Xiaomi 24122RKC7G, Android 16 (HyperOS), SoC SM8750, arm64‑v8a. Gama alta: en un teléfono de gama media hay que
 esperar varias veces estos tiempos.
 
-- **Vectores dorados en el teléfono** (`GoldenModelTest`): 2/2 OK en los 3 casos. |Δlogit| máx = 6·10⁻⁵
-  (tolerancia 0,1), tanto desde `input_u8.bin` como por el camino completo PNG → recorte con OpenCV Android → modelo.
+- **Vectores dorados en el teléfono** (`GoldenModelTest`): 2/2 OK en los 3 casos, con el modelo v2 y sus vectores
+  regenerados (a7e4bb4). |Δlogit| máx = 1,6·10⁻⁴ (tolerancia 0,1), tanto desde `input_u8.bin` como por el camino
+  completo PNG → recorte con OpenCV Android → modelo. (Con v1 había dado 6·10⁻⁵.)
+- La tabla de latencias es del v1; con el v2 (misma arquitectura y tamaño) se repitió y da lo mismo: modelo 23,2 ms,
+  pipeline completo 29,4 ms.
 - **Latencia por etapa** (`PipelineBenchmarkTest`, fotograma 640×427, mediana / p90):
 
   | etapa | mediana | p90 |
@@ -119,16 +123,21 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Modelo
 
-`app/src/main/assets/chess_square_classifier.tflite` + `labels.txt` son el modelo v1 de la rama
-`claude/ml-modelo-de93a1` (commit c5a677b, fp16, 1,9 MB; SHA‑256 `e88d238c…c6aebd`, igual a `ml/export/SHA256SUMS`).
+`app/src/main/assets/chess_square_classifier.tflite` + `labels.txt` son el modelo **v2** de la rama
+`claude/ml-modelo-de93a1` (commit a7e4bb4, fp16, 1 916 920 bytes; SHA‑256 `48ba3677…2f0e82c`, igual a
+`ml/export/SHA256SUMS`, verificado también dentro del APK instalado).
 `LiteRtSquareClassifier` lo carga sin comprimir y comprueba que `labels.txt` tenga el orden de clases del contrato
 y que los tensores sean `[64,128,64,3]` → `[64,13]`. Si algo falla usa `FakeSquareClassifier` (solo textura:
 vacía / «peón» claro / «peón» oscuro) y la pantalla dice «Sin modelo: clasificador de prueba».
 Para actualizarlo: copiar `ml/export/chess_square_classifier.tflite` y `labels.txt` a `app/src/main/assets/`.
 
-Según `ml/RESULTS.md`: 99,3 % por casilla en test sintético pero **83 % en fotos reales** (vacía/ocupada > 99 %;
-el tipo de pieza es flojo hasta reentrenar con datos del tablero del usuario). La atribución CC BY 4.0 del
-dataset está en la app (botón «Créditos»).
+Precisión por casilla en un solo fotograma según `ml/RESULTS.md` (v1 → v2): ChessReD real 81,6 → 97,0 %,
+samryan18 real 75,2 → 99,4 %, tablero real nunca visto (chesscog, 27 fotos) 83,0 → 89,0 %, 2D sintético 73,5 → 98,3 %,
+captura de Lichess en el Xiaomi 0/8 → 8/8 piezas. La confusión más común es dama ↔ rey del mismo color: la fusión deja
+esa casilla dudosa si el otro de la pareja tiene ≥ 3 % de probabilidad (`FusionConfig.queenKingMinOther`).
+
+**Licencia: el v2 es CC BY‑NC‑SA 4.0 (por ChessReD), solo uso no comercial** (ver [`LICENSES.md`](LICENSES.md)).
+La atribución completa está en la app (botón «Créditos»).
 
 Test instrumentado (necesita teléfono o emulador): compara la salida del modelo en Android con
 `output_logits_f32.bin` (mismo argmax en las 64 casillas, |Δlogit| ≤ 0,1), desde `input_u8.bin` y también por el
@@ -139,19 +148,20 @@ camino completo PNG → recorte con OpenCV Android → modelo. Los vectores van 
 
 ## Resultados medidos (en la PC)
 
-- Tests: 38/38 verdes con `-PgoldenDir` (35 sin él, que saltea los 3 dorados).
+- Tests: 41/41 verdes con `-PgoldenDir` (38 sin él, que saltea los 3 dorados).
 - Vectores dorados (`full_1200x800`, `small_640x427`, `cut_corner`): homografía, canónica, recortes y tensor dentro de tolerancia.
 - Detector en los 3 renders dorados: error de esquina 0,01–0,03 casillas (incluso con la esquina BL fuera del cuadro, que se extrapola y el control de calidad marca «Alejate, falta una esquina»).
 - Detector en las 19 fotos de `Dynamic-Chess-Board-Piece-Extraction/test-images` (solo prueba local, sin licencia):
   encuentra el tablero en **19/19** y, girando cada foto 0/90/180/270° y achicándola a 640 px como el fotograma
   de la cámara, da el mismo tablero en **76/76**. Ojo: las etiquetas de esas fotos salieron del propio detector
   y se revisaron a ojo sobre la retícula dibujada; no son una anotación independiente.
-- Tiempo del detector en la PC: ~10–20 ms por imagen de 640 px (sin medir en el teléfono).
+- Tiempo del detector en la PC: ~10–20 ms por imagen de 640 px (en el Xiaomi, 11,5 ms).
 
 ## Limitaciones conocidas
 
 - **Probado en un solo teléfono, de gama alta.** Falta medir en gama media y verificar a ojo, con el tablero real, que la retícula quede alineada sobre la vista previa en distintos teléfonos.
-- **Modelo v1 flojo en piezas reales** (83 % por casilla en fotos reales, según ML). La confianza está calibrada con datos sintéticos, así que «Posición lista» puede aparecer con piezas mal clasificadas: conviene revisar siempre al congelar.
+- **Modelo v2: 89 % por casilla en un tablero real nunca visto** (según ML, un fotograma). Todavía no se midió con el tablero del usuario ni después de la fusión. «Posición lista» puede aparecer con piezas mal clasificadas: conviene revisar siempre al congelar.
+- **Licencia del modelo CC BY‑NC‑SA 4.0:** el APK con este modelo no puede usarse con fines comerciales.
 - Sin tablero detectado, el tablero digital se muestra vacío y atenuado («Sin posición»); la fusión se conserva hasta 15 fotogramas por si el tablero vuelve, y después se reinicia.
 - Umbrales del control de calidad (nitidez 40, tamaño 35 % del lado menor, ángulo 0,45, movimiento 0,25 casillas/fotograma) puestos a ojo; hay que ajustarlos con fotogramas reales del teléfono.
 - La retícula se dibuja suponiendo que la vista previa (`FIT_CENTER`) y el análisis 4:3 tienen el mismo campo visual; en algunos teléfonos puede quedar corrida unos píxeles.
