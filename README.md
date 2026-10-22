@@ -97,7 +97,9 @@ Tiempos en el Xiaomi: unos 29 ms por fotograma clasificando (23 ms el modelo), y
   Arandjelović, 2021, https://osf.io/xf3ka/, CC BY 4.0), chess-dataset de samryan18 (MIT) y sets de piezas y tableros de
   Lichess. La atribución completa está en la app (botón «Créditos»).
 - **Dependencias de la app:** OpenCV, LiteRT, CameraX y Jetpack Compose, todas Apache 2.0.
-- **Código de este repositorio:** todavía no tiene una licencia declarada (falta un archivo `LICENSE`).
+- **Código de este repositorio:** [GNU GPL v3.0](LICENSE). Podés usarlo, modificarlo y redistribuirlo; si
+  distribuís una versión modificada, tiene que ser también GPL‑3.0 y con su código fuente. El modelo y los datos
+  tienen sus propias licencias, indicadas arriba.
 - Detalle en [`android/LICENSES.md`](android/LICENSES.md) y [`ml/LICENSES.md`](ml/LICENSES.md).
 
 ## Limitaciones conocidas
