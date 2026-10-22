@@ -91,6 +91,14 @@ python -m chessscan.autolabel mi_video.mp4 --out data/real/tablero1_inicial \
 
 Se abre el primer fotograma: hacé clic en las 4 esquinas del área de juego en orden lejana‑izquierda, lejana‑derecha, cercana‑derecha, cercana‑izquierda. `--a1` dice dónde quedó a1 en el **primer fotograma**: `BL` si las blancas están del lado de la cámara, `TR` si están enfrente, `TL`/`BR` si están a la izquierda/derecha. El resto de los fotogramas se sigue solo (SIFT + homografía); se descartan los movidos o con el tablero fuera de cuadro. **Mirá `preview.jpg`**: la retícula verde tiene que calzar con las casillas y las letras tienen que estar sobre las piezas correctas. Si no calza, descartá esa carpeta.
 
+**Videos donde el tablero no entra entero en el primer cuadro** (lo normal filmando de cerca): `chessscan.autolabel_video`. Se marcan las esquinas en un cuadro cualquiera (pueden quedar afuera de la imagen), se sigue el tablero hacia adelante y hacia atrás, y con `--min-squares 40` se usan solo las casillas que se ven enteras. Así se generó el v3:
+
+```bash
+python -m chessscan.autolabel_video VID_20261022_104414.mp4 --cache data/raw/user_video/frames_720.npy     --anchor 1100 --anchor-corners "86.9,326.1 655.3,249.7 933.3,688.8 173.4,848.0" --a1 BL     --fen "rr4k1/R1Q2ppp/4pq2/8/7n/3P4/2P2NPP/5R1K" --out data/real/video1 --min-squares 40
+# separación temporal: train 0–679, test 740–1135 (ver RESULTS.md), y después:
+python -m chessscan.eval_video --model export/chess_square_classifier.tflite --data data/real/video1 --frames 740 1135 --windows 1 30 60 0
+```
+
 Fotos sueltas con FEN conocido: anotá las esquinas en un JSON (ver `eval_annotations/`) y usá `python -m chessscan.prepare_real`. `chessscan.corners.refine` ajusta esquinas aproximadas a los bordes de las casillas.
 
 ## 3. Entrenar → evaluar → exportar
@@ -106,6 +114,12 @@ python -m chessscan.pipeline --run runs/v2 --data data/prepared --init runs/v1_c
   --extra data/prepared2d/train:0.35 data/prepared2d_tex/train:0.35 data/prepared2d_tex_b/train:0.3 data/prepared_chessred/train:1.0 data/prepared_samryan/train:0.3 \
   --val-extra data/prepared2d_tex/val data/prepared_chessred/val \
   --eval-real data/prepared_real/test data/prepared_chessred/test data/prepared_samryan/test data/prepared2d_tex/test data/prepared2d_tex/test_heldout
+```
+
+**Modelo v3 entregado** (ajuste fino desde v2 con el video del usuario; ~15 min):
+
+```bash
+python -m chessscan.pipeline --run runs/v3 --data data/prepared --init runs/v2/model.keras --epochs 4 --steps 500 --lr 3e-4 --seed 1234   --extra data/real/video1_train:1.2 data/prepared2d_tex/train:0.3 data/prepared2d_tex_b/train:0.2 data/prepared2d/train:0.2 data/prepared_chessred/train:0.8 data/prepared_samryan/train:0.2   --val-extra data/prepared2d_tex/val data/prepared_chessred/val   --eval-real data/real/video1_test data/prepared_real/test data/prepared_chessred/test data/prepared_samryan/test data/prepared2d_tex/test data/prepared2d_tex/test_heldout
 ```
 
 Con datos reales propios (recomendado; mezcla 1 tablero real cada ~3 sintéticos):
