@@ -4,7 +4,7 @@ Implementación de la parte Android de [`SPEC.md`](../SPEC.md): cámara en vivo 
 clasificador → fusión temporal → orientación → FEN → Lichess. Todo offline; el único permiso es `CAMERA`.
 
 > **Estado (22‑10‑2026):** compila, tests verdes, APK debug con el modelo **v3** de `ml/` (vectores dorados v3
-> verificados en la PC; en el teléfono todavía no) (licencia **CC BY‑NC‑SA 4.0,
+> verificados en la PC y en el teléfono: |Δlogit| máx 9·10⁻⁵) (licencia **CC BY‑NC‑SA 4.0,
 > solo uso no comercial**), instalado y medido en
 > **un** teléfono (Xiaomi 24122RKC7G, Snapdragon 8 Elite, gama alta: **no representa la gama media de la SPEC**).
 > Todavía no se midió la precisión con el tablero real del usuario.
