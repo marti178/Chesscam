@@ -10,4 +10,6 @@ __pycache__/
 ml/data/
 ml/runs/
 *.apk
+*.mp4
+*.mov
 !android/release/*.apk
