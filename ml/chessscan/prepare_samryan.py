@@ -24,12 +24,15 @@ from . import geometry as g
 from .corners import refine
 
 
-def checker_corr(canon: np.ndarray) -> float:
+def checker_corr(canon: np.ndarray, mask: np.ndarray | None = None) -> float:
+    """Correlación entre el brillo central de cada casilla y el patrón de damero (±1)."""
     gray = cv2.cvtColor(canon, cv2.COLOR_RGB2GRAY).astype(np.float32)
-    m = [gray[g.MY + g.S * r + 8:g.MY + g.S * r + 24, g.MX + g.S * c + 8:g.MX + g.S * c + 24].mean()
-         for r in range(8) for c in range(8)]
+    m = np.array([gray[g.MY + g.S * r + 8:g.MY + g.S * r + 24, g.MX + g.S * c + 8:g.MX + g.S * c + 24].mean()
+                  for r in range(8) for c in range(8)])
     chk = np.array([(r + c) % 2 for r in range(8) for c in range(8)]) * 2 - 1
-    return float(np.corrcoef(m, chk)[0, 1])
+    if mask is not None:
+        m, chk = m[mask], chk[mask]
+    return float(np.corrcoef(m, chk)[0, 1]) if len(m) > 2 else 0.0
 
 
 def find_corners(orig: np.ndarray, pre: np.ndarray, sift) -> np.ndarray | None:

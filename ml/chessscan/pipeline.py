@@ -69,20 +69,23 @@ def predict_logits(predict, x: np.ndarray, bs: int = 256) -> np.ndarray:
 
 
 def metrics(logits: np.ndarray, y: np.ndarray) -> dict:
+    """Métricas por casilla y por tablero (de a 64). Las etiquetas -1 (no visibles) se ignoran."""
     pred = logits.argmax(1)
-    ok = pred == y
+    vis = y >= 0
+    ok = (pred == y) & vis
     n_cls = len(g.CLASSES)
     conf = np.zeros((n_cls, n_cls), int)
-    np.add.at(conf, (y, pred), 1)
-    boards = ok.reshape(-1, 64)
+    np.add.at(conf, (y[vis], pred[vis]), 1)
+    err_b = (vis & ~ok).reshape(-1, 64).sum(1)
+    yv, okv = y[vis], ok[vis]
     return {
-        "squares": int(len(y)),
-        "square_acc": float(ok.mean()),
-        "occupied_acc": float(ok[y != 0].mean()) if (y != 0).any() else None,
-        "empty_acc": float(ok[y == 0].mean()) if (y == 0).any() else None,
-        "boards": int(len(boards)),
-        "board_acc_all64": float(boards.all(1).mean()),
-        "mean_errors_per_board": float((~boards).sum(1).mean()),
+        "squares": int(vis.sum()),
+        "square_acc": float(okv.mean()),
+        "occupied_acc": float(okv[yv != 0].mean()) if (yv != 0).any() else None,
+        "empty_acc": float(okv[yv == 0].mean()) if (yv == 0).any() else None,
+        "boards": int(len(err_b)),
+        "board_acc_all64": float((err_b == 0).mean()),  # con máscara: todas las casillas visibles bien
+        "mean_errors_per_board": float(err_b.mean()),
         "per_class_recall": {c: (float(conf[i, i] / conf[i].sum()) if conf[i].sum() else None)
                              for i, c in enumerate(g.CLASSES)},
         "confusion": conf.tolist(),
@@ -90,6 +93,7 @@ def metrics(logits: np.ndarray, y: np.ndarray) -> dict:
 
 
 def fit_temperature(logits: np.ndarray, y: np.ndarray) -> float:
+    logits, y = logits[y >= 0], y[y >= 0]
     best = (1e9, 1.0)
     for t in np.exp(np.linspace(np.log(0.3), np.log(5), 200)):
         z = logits / t
@@ -188,6 +192,8 @@ def main() -> None:
     for d in a.val_extra:
         xe, ye = all_crops(Boards.load(d))
         xv, yv = np.concatenate([xv, xe]), np.concatenate([yv, ye])
+    keep = yv >= 0  # casillas no visibles (-1) fuera de la validación
+    xv, yv = xv[keep], yv[keep]
 
     if not a.eval_only:
         model = keras.models.load_model(a.init) if a.init else build_model(a.arch)

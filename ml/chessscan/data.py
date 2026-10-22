@@ -13,7 +13,7 @@ from .augment import augment_board
 @dataclass
 class Boards:
     canon: np.ndarray   # uint8 [N, CH, CW, 3] (memmap)
-    labels: np.ndarray  # int64 [N, 64]
+    labels: np.ndarray  # int64 [N, 64]; -1 = casilla no visible (se ignora)
 
     @classmethod
     def load(cls, d: Path) -> "Boards":
@@ -46,7 +46,7 @@ class TrainBatches:
         self.batch_size, self.steps, self.seed = batch_size, steps, seed
         self.bpb, self.geo_px = boards_per_batch, geo_px
         lab = np.concatenate([s[0].labels.reshape(-1) for s in sources])
-        freq = np.bincount(lab, minlength=len(g.CLASSES)).astype(float) + 1
+        freq = np.bincount(lab[lab >= 0], minlength=len(g.CLASSES)).astype(float) + 1
         self.class_w = freq ** -0.5
         self.epoch = 0
 
@@ -63,6 +63,6 @@ class TrainBatches:
             xs.append(g.crop_all(canon))
             ys.append(lab)
         x, y = np.concatenate(xs), np.concatenate(ys)
-        p = self.class_w[y]
+        p = np.where(y >= 0, self.class_w[np.maximum(y, 0)], 0.0)
         sel = rng.choice(len(y), size=self.batch_size, replace=False, p=p / p.sum())
         return x[sel].astype(np.float32), y[sel]
