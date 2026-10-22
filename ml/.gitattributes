@@ -2,3 +2,4 @@
 *.png binary
 *.tflite binary
 *.npy binary
+export/* -text
