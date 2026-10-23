@@ -82,6 +82,24 @@ Para ChessReD (el uso principal: recuperar las fotos sin esquinas) da **100 % < 
 
 ---
 
+## Memoria de ejemplos (kNN sobre embeddings, contrato v1.1)
+
+Simulación offline (`chessscan/knn_memory.py`) en los dos videos físicos que nunca se usaron para entrenar. «Correcciones» = 5 cuadros del primer 20 % del video con sus 64 casillas confirmadas; test = 1 de cada 5 cuadros del último 60 %. Los parámetros se eligieron en un video y se midieron en el otro (columna «otro video»). Casillas / piezas, 1 cuadro, sin fusión:
+
+| Modelo · parámetros (k, umbral, w) | Video | Modelo solo | kNN solo | **Mezcla** |
+|---|---|---|---|---|
+| Small · (5; 0,5; 0,5), elegido en 133425 | 133425 | 84,9 / 57,0 | 85,2 / 56,2 | **87,9 / 64,5** |
+| | 132356 (otro video) | 83,7 / 54,2 | 92,5 / 78,5 | **89,3 / 69,4** |
+| Large · (10; 0,5; 0,7), elegido en 133425 | 133425 | 84,0 / 52,9 | — | **89,7 / 69,4** |
+| | 132356 (otro video) | 88,6 / 66,9 | — | **93,0 / 79,5** |
+| Large · (5; 0,7; 0,5), fijo | 132356 / 133425 | 88,6 / 84,0 | 95,2 / 85,8 | **94,4 / 85,8** |
+
+- Con 1 solo cuadro corregido ya suma de +1 a +6 puntos; con 3–5 cuadros, de +3 a +10. Más cuadros, más gana.
+- **Guardar solo las casillas erradas sirve mucho menos** (+0,5 a +1,5, y a veces empeora): sin ejemplos de casillas vacías ni de las que ya estaban bien, el kNN tira todo hacia las clases corregidas. Hay que guardar el tablero entero confirmado.
+- Recomendado: k = 5, similitud ≥ 0,5, w = 0,6 (entre los mejores de los dos videos). Salvedad: 2 videos de un mismo juego de piezas; las correcciones y el test son del mismo video y la misma luz, así que en otra sesión la ganancia puede ser menor.
+
+---
+
 ## Probado y no publicado: v7l (MobileNetV3‑Large + 6623 fotos de ChessReD recuperadas)
 
 Mismos datos y receta que el v6l, más 4834 fotos de ChessReD (train completo, sin esquinas en el original) recuperadas con `corner_detector.tflite` y verificadas contra su FEN (`chessscan/recover_chessred.py`: ≥ 60/64 casillas de acuerdo con el v6l y ≥ 6 de margen sobre la segunda orientación; en 165 fotos con verdad conocida: 162 aceptadas, 0 con a1 o esquinas mal). Comando en `runs/v7l/COMMAND.txt`.

@@ -182,3 +182,11 @@ python -m chessscan.corner_net eval --run runs/corners_v1 --zoom
 python -m chessscan.corner_net export --run runs/corners_v1
 ```
 El entrenamiento es reanudable (`BackupAndRestore`): si se corta, se relanza el mismo comando. Contrato en `CONTRACT_CORNERS.md`, resultados en `RESULTS.md`.
+
+## Modelos con embedding (contrato v1.1) y memoria de ejemplos
+
+```
+python -m chessscan.export_embed --model runs/v5/model_calibrated.keras --out export/chess_square_classifier_emb.tflite
+python -m chessscan.export_embed --model runs/v6l/model_calibrated.keras --out export/chess_square_classifier_large_emb.tflite
+python -m chessscan.knn_memory --model export/chess_square_classifier_emb.tflite --out runs/knn_small.json
+```

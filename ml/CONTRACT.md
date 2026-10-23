@@ -1,4 +1,4 @@
-# Contrato ML ↔ Android — v1
+# Contrato ML ↔ Android — v1.1
 
 Este documento fija **exactamente** cómo se pasa de un fotograma con las 4 esquinas del tablero a la salida del clasificador. La implementación de referencia está en `ml/chessscan/geometry.py` y los vectores dorados en `ml/golden/`. Si algo de acá contradice al código de referencia, es un bug: avisar.
 
@@ -150,6 +150,22 @@ La cuantización (int8 o fp16 internos) es un detalle interno del `.tflite`: **l
 
 Las etiquetas de pieza son los caracteres FEN, así que se pueden usar directamente al armar el FEN (una vez resuelta la orientación).
 
+## 5.1. Salida extra de embedding (v1.1, compatible hacia atrás)
+
+Archivos aparte; los de v1 no cambian:
+
+| Archivo | Modelo | Salidas |
+|---|---|---|
+| `chess_square_classifier_emb.tflite` | v5 Small | `logits` [64,13] + `embedding` [64,**576**] |
+| `chess_square_classifier_large_emb.tflite` | v6l Large | `logits` [64,13] + `embedding` [64,**960**] |
+
+- Entrada idéntica a §4. `logits` es **bit a bit igual** a la del modelo v1 correspondiente (verificado con los 3 casos dorados).
+- `embedding`: vector después del GlobalAveragePooling y antes de dropout/densa, **ya normalizado L2** (norma 1 ± 1e‑6). La similitud coseno es el producto escalar.
+- **Cómo distinguirlas:** en la firma `serve` se llaman `logits` y `embedding`, pero los tensores se llaman `StatefulPartitionedCall:N` y **el índice 0 es el embedding**. Con `Interpreter` común, por forma: último eje 13 = logits; 576 o 960 = embedding.
+- Los embeddings del Small y del Large no son comparables entre sí: si se cambia de modelo, hay que recalcular la memoria (guardar también los recortes, o su canónica, permite recalcularla).
+
+Memoria de ejemplos recomendada (medida offline, ver `RESULTS.md`): guardar el embedding de **las 64 casillas** de cada tablero que el usuario confirma o corrige (incluidas las vacías y las que estaban bien), y clasificar con `p = (1 − w)·softmax(logits) + w·voto`, donde el voto suma la similitud de los **k = 5** vecinos con similitud ≥ **0,5** por clase y se normaliza a 1; con **w = 0,6**. Si ningún vecino pasa el umbral, queda el modelo solo.
+
 ## 6. Vectores dorados (`ml/golden/`)
 
 Cada caso `ml/golden/<caso>/` trae:
@@ -197,3 +213,4 @@ for (row in 0 until 8) for (col in 0 until 8) {
 ## Historial
 
 - **v1** (2026‑10‑21): versión inicial.
+- **v1.1** (2026‑10‑23): modelos con una salida extra de embedding (§5.1). Lo de v1 no cambia.

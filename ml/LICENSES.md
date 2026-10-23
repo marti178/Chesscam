@@ -79,6 +79,7 @@ No usados: los sets de piezas AGPL (letter, pirouetti, pixel), los «freeware» 
 | v5 | v4 + videos del usuario `VID_20261022_132028` (propio) y **`VID_20261022_134155`, cuadros 0–899: video de un PDF del libro «Tratado general de ajedrez» (con copyright)** |
 | v6l | las mismas fuentes que el v5 (MobileNetV3‑Large con pesos ImageNet de Keras, Apache 2.0) |
 | corners_v1 (`corner_detector.tflite`) | pesos ImageNet de MobileNetV3‑Small (Apache 2.0) + chesscog sintético (CC BY 4.0) + ChessReD chessred2k train (CC BY‑NC‑SA 4.0) + surawut/chessboard-dataset-yolo (CC BY 4.0) + samryan18 train (MIT) + videos del usuario `VID_20261022_104414`, `_105447`, `_132028` (propios) y **`VID_20261022_134155` cuadros 0–899 (libro con copyright)** + sintético 2D y de libros (sets de Lichess, licencias de arriba). Test: ChessReD test, samryan test, videos `_132356` y `_133425`, libro cuadros 1000–1412 y las fotos reales de chesscog (solo evaluación). Se publica bajo **CC BY‑NC‑SA 4.0**. |
+| `*_emb.tflite` | los mismos pesos que el v5 y el v6l (solo se agrega la salida de embedding); mismas fuentes y CC BY‑NC‑SA 4.0 |
 | siguientes | se agrega acá cada fuente nueva al publicarlo |
 
 Atribución que tiene que mostrar la app:
