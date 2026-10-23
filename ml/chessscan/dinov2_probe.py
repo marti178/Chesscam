@@ -26,7 +26,7 @@ MEAN = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
 STD = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
 
 # Mismas fuentes que el v5 (sin los videos de test).
-TRAIN = [("data/prepared", 1.0), ("data/real/video1", 0.5), ("data/real/video3", 0.8), ("data/real/video6book_train", 0.3),
+TRAIN = [("data/prepared/train", 1.0), ("data/real/video1", 0.5), ("data/real/video3", 0.8), ("data/real/video6book_train", 0.3),
          ("data/preparedbook/train", 0.35), ("data/preparedbook_b/train", 0.3), ("data/prepared2d_tex/train", 0.3),
          ("data/prepared2d_tex_b/train", 0.2), ("data/prepared2d/train", 0.15), ("data/prepared_chessred/train", 0.8),
          ("data/prepared_samryan/train", 0.2)]

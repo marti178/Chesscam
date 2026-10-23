@@ -42,6 +42,19 @@ Mismos cuadros de test (1 de cada 10, solo vistas desde el lado de un jugador, p
 | Libro en el monitor (34) | 100 / 100 % | 53,2 / 0,1 % |
 | Tiempo por tablero en esta CPU | ~75 ms (rectificación + recorte + modelo) | 2–8 s |
 
+### DINOv2 ViT‑S/14 (facebook/dinov2-small, Apache 2.0), backbone congelado
+
+Recorte del contrato llevado a 224×112 (16×8 parches), features = CLS ‖ media de parches (768). Cabeza entrenada con 51 200 casillas aumentadas de las mismas fuentes que el v5 (`chessscan/dinov2_probe.py`). Test: 1 de cada 10 cuadros.
+
+| Set (casillas / piezas) | DINOv2 + lineal | DINOv2 + MLP | v5 Small | v6l Large |
+|---|---|---|---|---|
+| Físico 132356 | 70,9 / 39,7 % | 75,8 / 43,9 % | 82,7 / 51,6 % | **88,0 / 65,5 %** |
+| Físico 133425 | 69,0 / 30,9 % | 69,5 / 27,2 % | 82,8 / 52,2 % | **83,3 / 52,8 %** |
+| Libro en el monitor | 84,0 / 72,0 % | 90,3 / 80,2 % | **94,5 / 88,4 %** | 93,2 / 85,4 % |
+
+- Costo: 22 M parámetros (44 MB fp16), **~5,8 GFLOPs por casilla, ~374 GFLOPs por tablero** (≈300× el Small). En vivo en el teléfono no va.
+- Congelado no gana, así que no se hizo el ajuste fino parcial ni la destilación. Un ajuste fino en CPU llevaría decenas de horas (estimado); tendría sentido en GPU y con más variedad de piezas reales. Salvedad: la cabeza vio 51 200 casillas fijas, contra los millones de casillas aumentadas que vio el v5.
+
 ---
 
 ## Modelo anterior: v5
