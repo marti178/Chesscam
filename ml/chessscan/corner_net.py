@@ -211,6 +211,33 @@ def predict_full(predict, img: np.ndarray):
     return pts, sc
 
 
+def predict_zoom(predict, img: np.ndarray, margin: float = 0.3):
+    """Dos pasadas: imagen entera y después un recorte cuadrado alrededor del tablero (lado = (1 + margin) × el
+    mayor del rectángulo de las 4 esquinas), para ganar resolución cuando el tablero ocupa poco de la imagen.
+    Cada esquina de la 1.ª pasada se reemplaza por la más cercana de la 2.ª, si está a menos de 1 casilla."""
+    pts, sc = predict_full(predict, img)
+    if len(pts) < 4:
+        return pts, sc
+    lo, hi = pts.min(0), pts.max(0)
+    side = (1 + margin) * (hi - lo).max()
+    c = (lo + hi) / 2
+    s = IN / side
+    M = np.array([[s, 0, IN / 2 - s * c[0]], [0, s, IN / 2 - s * c[1]], [0, 0, 1]])
+    x = cv2.warpAffine(img, M[:2], (IN, IN), flags=cv2.INTER_AREA, borderValue=(0, 0, 0))
+    out = predict(x[None].astype(np.float32))
+    p2, sc2 = decode(np.asarray(out["heat"][0]), np.asarray(out["off"][0]))
+    if len(p2) == 0:
+        return pts, sc
+    p2 = cv2.perspectiveTransform(p2.reshape(-1, 1, 2).astype(np.float64), np.linalg.inv(M)).reshape(-1, 2)
+    sq = (hi - lo).max() / 8
+    pts = pts.copy()
+    for k in range(len(pts)):
+        d = np.linalg.norm(p2 - pts[k], axis=1)
+        if d.min() < sq:
+            pts[k] = p2[d.argmin()]
+    return pts, sc
+
+
 # ---------------------------------------------------------------- main
 
 WEIGHTS = {"chessred": 2.0, "surawut": 0.8, "video1": 1.0, "video3": 1.5, "video2": 0.4, "video6book": 0.6,
@@ -246,7 +273,7 @@ def evaluate(a):
             for it in its[:: max(1, len(its) // a.max_per_src)]:
                 img = cv2.cvtColor(cv2.imread(str(a.data / it["img"])), cv2.COLOR_BGR2RGB)
                 t = time.perf_counter()
-                pts, _ = predict_full(predict, img)
+                pts, _ = (predict_zoom if a.zoom else predict_full)(predict, img)
                 ms.append((time.perf_counter() - t) * 1000)
                 errs.append(corner_error(pts, np.array(it["corners"])))
             e = np.array(errs)
@@ -255,7 +282,7 @@ def evaluate(a):
                  "ms_mediana": float(np.median(ms))}
             res[f"{split}/{src}"] = r
             print(f"{split:5s} {src:13s} n={r['n']:4d}  <0,1: {r['exito_0.1']:.3f}  <0,25: {r['exito_0.25']:.3f}  <0,5: {r['exito_0.5']:.3f}  mediana {r['error_mediano_casillas']}", flush=True)
-    (a.run / "eval.json").write_text(json.dumps(res, indent=1))
+    (a.run / ("eval_zoom.json" if a.zoom else "eval.json")).write_text(json.dumps(res, indent=1))
 
 
 def export(a):
@@ -284,6 +311,7 @@ def main():
     ap.add_argument("--lr", type=float, default=2e-3)
     ap.add_argument("--seed", type=int, default=1234)
     ap.add_argument("--max-per-src", type=int, default=300)
+    ap.add_argument("--zoom", action="store_true", help="eval: segunda pasada con zoom sobre el tablero")
     a = ap.parse_args()
     {"train": train, "eval": evaluate, "export": export}[a.cmd](a)
 

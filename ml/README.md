@@ -172,3 +172,13 @@ python -m pytest -q tests
 ```
 
 Regenerar los vectores dorados cada vez que cambia el modelo (las salidas esperadas dependen de él) y actualizar `RESULTS.md`. Si cambia algo del recorte o de la entrada, es un **contrato nuevo**: subir la versión en `CONTRACT.md` y `geometry.CONTRACT_VERSION`, y avisar a Android.
+
+## Detector de esquinas (corners_v1)
+
+```
+python -m chessscan.corners_data --out data/corners
+python -m chessscan.corner_net train --run runs/corners_v1 --epochs 30 --steps 500 --batch 32 --lr 2e-3 --seed 1234
+python -m chessscan.corner_net eval --run runs/corners_v1 --zoom
+python -m chessscan.corner_net export --run runs/corners_v1
+```
+El entrenamiento es reanudable (`BackupAndRestore`): si se corta, se relanza el mismo comando. Contrato en `CONTRACT_CORNERS.md`, resultados en `RESULTS.md`.

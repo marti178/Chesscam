@@ -57,6 +57,31 @@ Recorte del contrato llevado a 224×112 (16×8 parches), features = CLS ‖ medi
 
 ---
 
+## Detector de esquinas: corners_v1 (`export/corner_detector.tflite`)
+
+Mapa de calor estilo CenterNet sobre MobileNetV3‑Small, entrada 256×256 con *letterbox*, fp16, **2,0 MB**. Contrato en `CONTRACT_CORNERS.md`. Entrenado 30 épocas × 500 lotes de 32 en CPU (~2 h 25 min), comando en `runs/corners_v1/COMMAND.txt`; 11 293 imágenes de entrenamiento, 693 de validación y 1116 de test, separadas por fuente y video (ver `chessscan/corners_data.py`).
+
+Métrica: para cada imagen, el **máximo** de las 4 esquinas del error en píxeles, dividido por el lado medio de casilla, con la mejor correspondencia entre esquinas predichas y reales. «Éxito < 0,25» = ninguna esquina se corre más de un cuarto de casilla. Si encuentra menos de 4 esquinas, cuenta como error.
+
+| Test | n | 1 pasada: < 0,25 / < 0,5 | **2 pasadas (zoom): < 0,1 / < 0,25 / < 0,5** | Error mediano (casillas), 2 pasadas | chesscog: < 0,25 / < 0,5 |
+|---|---|---|---|---|---|
+| ChessReD test | 306 | 99,3 / 100,0 % | **80,7 / 100,0 / 100,0 %** | 0,07 | 30,0 / 32,5 % (n=40, 6,7 s) |
+| samryan18 test | 105 | 98,1 / 100,0 % | **94,3 / 100,0 / 100,0 %** | 0,06 | 30,0 / 30,0 % (n=40, 0,2 s) |
+| Fotos reales de chesscog (tablero ajeno) | 29 | 72,4 / 96,6 % | **0,0 / 72,4 / 93,1 %** | 0,23 | 72,4 / 82,8 % (n=29, 0,6 s) |
+| Video físico 132356 | 386 | 32,9 / 87,6 % | **11,4 / 70,5 / 92,7 %** | 0,19 | 0,0 / 0,0 % (n=40, 0,1 s) |
+| Video físico 133425 | 207 | 17,4 / 81,6 % | **3,4 / 70,5 / 99,5 %** | 0,19 | 0,0 / 0,0 % (n=40, 0,1 s) |
+| Libro en el monitor (1000–1412) | 83 | 1,2 / 9,6 % | **42,2 / 62,7 / 62,7 %** | 0,12 | 0,0 / 0,0 % (n=40, 0,1 s) |
+
+- **2 pasadas** = imagen entera y después un recorte alrededor del tablero (`predict_zoom`). Sin el zoom, el paso de 4 px sobre 256 limita la precisión cuando el tablero ocupa poco del cuadro: en los videos el error era de 5–9 px con casillas de ~20 px. La 2.ª pasada lo baja a la mitad.
+- Latencia del `.tflite` en esta PC: **2,1 ms por pasada con 4 hilos, 2,8 ms con 1**; el resultado del TFLite coincide con el de Keras en una muestra de 279 imágenes de test. **En el teléfono no está medido.**
+- chesscog: su detector clásico, sobre 40 imágenes por fuente (29 en sus propias fotos), en esta CPU. Falla en todos los cuadros de los videos del usuario y en el 70 % de ChessReD, y tarda de 0,2 a 6,7 s. En sus propias fotos empata con el nuestro (72 % < 0,25).
+- **Detector OpenCV de Android: no medido todavía** sobre este test (se le pidió a la sesión de Android con la misma métrica).
+- Salvedad: las esquinas de los videos vienen del autoetiquetado (seguimiento con SIFT), así que su propio error limita el «< 0,1» en esas filas. En el libro, el 37 % restante son fallas groseras (toma otro rectángulo de la página o del monitor).
+
+Para ChessReD (el uso principal: recuperar las fotos sin esquinas) da **100 % < 0,25** en test.
+
+---
+
 ## Modelo anterior: v5
 
 
