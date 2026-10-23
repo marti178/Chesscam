@@ -76,7 +76,8 @@ No usados: los sets de piezas AGPL (letter, pirouetti, pixel), los «freeware» 
 | v3 | v2 + video del tablero del usuario `VID_20261022_104414` (propio) |
 | v4 | v3 + diagramas de libro sintéticos (mismos sets de Lichess) |
 | v5 | v4 + videos del usuario `VID_20261022_132028` (propio) y **`VID_20261022_134155`, cuadros 0–899: video de un PDF del libro «Tratado general de ajedrez» (con copyright)** |
-| v6 | se agrega acá cada fuente nueva al publicarlo |
+| v6l | las mismas fuentes que el v5 (MobileNetV3‑Large con pesos ImageNet de Keras, Apache 2.0) |
+| siguientes | se agrega acá cada fuente nueva al publicarlo |
 
 Atribución que tiene que mostrar la app:
 

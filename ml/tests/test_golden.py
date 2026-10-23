@@ -30,10 +30,13 @@ def test_case(case):
         assert np.array_equal(crops[i], rgb(case / "crops" / f"r{i // 8}c{i % 8}.png"))
 
 
+@pytest.mark.parametrize("variant", [("chess_square_classifier.tflite", "output_logits_f32.bin"),
+                                     ("chess_square_classifier_large.tflite", "output_logits_large_f32.bin")],
+                         ids=["small", "large"])
 @pytest.mark.parametrize("case", CASES, ids=lambda p: p.name)
-def test_model_output(case):
-    model = GOLDEN.parent / "export" / "chess_square_classifier.tflite"
-    if not (case / "output_logits_f32.bin").exists() or not model.exists():
+def test_model_output(case, variant):
+    model = GOLDEN.parent / "export" / variant[0]
+    if not (case / variant[1]).exists() or not model.exists():
         pytest.skip("sin modelo exportado")
     import tensorflow as tf
 
@@ -46,6 +49,6 @@ def test_model_output(case):
     it.set_tensor(inp["index"], x)
     it.invoke()
     got = it.get_tensor(out["index"])
-    want = np.fromfile(case / "output_logits_f32.bin", "<f4").reshape(64, len(g.CLASSES))
+    want = np.fromfile(case / variant[1], "<f4").reshape(64, len(g.CLASSES))
     assert (got.argmax(1) == want.argmax(1)).all()
     assert np.abs(got - want).max() <= 0.1

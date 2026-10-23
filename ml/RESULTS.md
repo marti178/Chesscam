@@ -1,8 +1,51 @@
 # Resultados — clasificador de casillas
 
-Fecha: 22‑10‑2026. Todo lo de esta página se midió en esta PC, salvo lo que se marca como medido por otro. Si algo no se midió, se dice.
+Fecha: 23‑10‑2026. Todo lo de esta página se midió en esta PC, salvo lo que se marca como medido por otro. Si algo no se midió, se dice.
 
-## Modelo entregado: v5
+## Modelos entregados: v5 (Small) y v6l (Large), a elegir en la app
+
+| Archivo en `export/` | Modelo | Tamaño | Latencia en esta PC, lote 64, 4 / 1 hilos |
+|---|---|---|---|
+| `chess_square_classifier.tflite` | **v5**, MobileNetV3‑Small, fp16 | 1,9 MB | 6,8 / 20 ms (en el Xiaomi: ~30 ms según la app) |
+| `chess_square_classifier_large.tflite` | **v6l**, MobileNetV3‑Large, fp16 | 6,0 MB | 29 / 70 ms (4,3× el Small; **en el teléfono no está medido**) |
+
+Los dos tienen el mismo contrato v1 (entrada [64,128,64,3] float32 0–255, salida [64,13] logits) y las mismas etiquetas. Las salidas doradas del Large están en `golden/<caso>/output_logits_large_f32.bin`. El int8 del Large **no sirve**: XNNPACK no lo puede preparar.
+
+v6l: MobileNetV3‑Large desde pesos ImageNet, con los **mismos datos que el v5**; 10 épocas × 1000 lotes, lr 2e‑3, semilla 1234, 2 h 40 min en CPU. Comando en `runs/v6l/COMMAND.txt` y en el README.
+
+### Test fijo (fp16; los videos físicos nunca se usaron para entrenar)
+
+| Set | v5 Small | **v6l Large** |
+|---|---|---|
+| Físico 132356: 1 cuadro / fusión 1 s / todo el video | 82,7 / 84,2 / 90,6 % (piezas 51,6 %) | **88,0 / 89,3 / 92,2 % (piezas 65,5 %)** |
+| Físico 133425: 1 cuadro / fusión 1 s / todo el video | 82,8 / 84,2 / 89,1 % (piezas 52,2 %) | 83,3 / 84,6 / **93,8 %** (piezas 52,8 %) |
+| Recall de piezas negras en 132356 / 133425: p · r · k · b · q · n | p 0,29/0,46 · r 0,68/0,69 · k 0,23/0,11 · b 0,11/– · q 0,62/0,00 · n –/0,31 | p **0,66**/0,52 · r **0,95/0,92** · k **0,41**/0,11 · b 0,11/– · q 0,53/0,00 · n –/0,23 |
+| Libro en el monitor: 1 cuadro / todo el tramo | 94,5 % / 100 % | 93,2 % / 100 % |
+| Muestra Alekhine · 2D real (Lichess en el monitor) | 64/64 · 99,95 % | 64/64 · 100 % |
+| Libros sintéticos, vistos / no vistos | 96,2 / 94,6 % | **98,5 / 97,8 %** |
+| Tablero ajeno (chesscog real, 27 fotos) | 82,9 % | **87,7 %** |
+| ChessReD test | 96,8 % | **98,6 %** |
+| 3D sintético · 2D sintético no visto | 99,05 % · 98,3 % | 99,48 % · 99,0 % |
+
+**Lectura:** el Large gana en casi todo, sobre todo en un video físico (+5 puntos por cuadro, +14 en piezas), en el tablero ajeno (+5), en ChessReD (+2) y en libros (+3). En el otro video físico gana poco por cuadro, pero fusionando todo el video pasa de 89 a 94 %. Empeora un poco por cuadro en el libro del monitor (−1,3); fusionado da 100 % en los dos. Sigue mal en **alfiles negros y damas negras** del juego del usuario (0–0,6): falta variedad de esas piezas en los datos.
+
+**Recomendación:** usar el **Large** si en el Xiaomi tarda ≤ ~120 ms por lote (≈ 4× los 30 ms del Small, estimado): con fusión, clasificar 1 de cada 3–4 cuadros alcanza. Si tarda más, quedarse con el Small y priorizar datos. Lo decide la medición en el teléfono.
+
+### Comparación con chesscog (preentrenado, sin ajuste fino)
+
+Mismos cuadros de test (1 de cada 10, solo vistas desde el lado de un jugador, porque chesscog no admite vistas desde el costado), mismas esquinas, cada uno con su recorte:
+
+| Set | v5: casillas / piezas | chesscog: casillas / piezas |
+|---|---|---|
+| Físico 132356 (123 cuadros) | 83,4 / 53,6 % | 65,5 / 12,6 % |
+| Físico 133425 (70) | 84,0 / 55,1 % | 66,7 / 8,1 % |
+| Libro en el monitor (34) | 100 / 100 % | 53,2 / 0,1 % |
+| Tiempo por tablero en esta CPU | ~75 ms (rectificación + recorte + modelo) | 2–8 s |
+
+---
+
+## Modelo anterior: v5
+
 
 Mismo contrato v1, misma arquitectura, fp16, 1 916 920 bytes (SHA‑256 en `export/SHA256SUMS`). Métricas completas en `export/metrics_v5.json` y `export/video*_v5.json`.
 
@@ -159,7 +202,8 @@ int8 pierde entre 1 y 6 puntos según el dominio (3D sintético 97,0 %, ChessReD
 | v2 | + 2D sintético, ChessReD, samryan18 | 99,05 % | 97,0 % | 99,4 % | 89,0 % | 98,3 % |
 | v3 | + video del tablero del usuario | 99,02 % | 97,1 % | 99,3 % | 86,1 % | 98,1 % |
 | v4 | + libros sintéticos | 99,06 % | 96,9 % | 99,35 % | 86,5 % | 98,1 % |
-| **v5** | + 2 videos físicos y 1 de libro del usuario | 99,05 % | 96,8 % | 99,33 % | 82,9 % | 98,3 % |
+| v5 | + 2 videos físicos y 1 de libro del usuario | 99,05 % | 96,8 % | 99,33 % | 82,9 % | 98,3 % |
+| **v6l** | mismos datos, MobileNetV3‑Large | 99,48 % | 98,6 % | — | 87,7 % | 99,0 % |
 
 ## Qué falta medir o mejorar
 

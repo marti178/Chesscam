@@ -134,6 +134,8 @@ python -m chessscan.pipeline --run runs/v5 --data data/prepared --init runs/v4/m
   --eval-real data/real/video4 data/real/video5 data/real/video6book_test data/real/video2 data/prepared_book_real/test
 ```
 
+**v6l** (MobileNetV3‑Large, mismos datos que el v5, reanudable): el comando exacto está en `runs/v6l/COMMAND.txt` (`--arch mnv3l --epochs 10 --steps 1000 --lr 2e-3`). Si se corta, se relanza el mismo comando y sigue desde la última época (`BackupAndRestore`).
+
 Con datos reales propios (recomendado; mezcla 1 tablero real cada ~3 sintéticos):
 
 ```bash
