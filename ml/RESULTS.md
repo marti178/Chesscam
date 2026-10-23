@@ -82,6 +82,24 @@ Para ChessReD (el uso principal: recuperar las fotos sin esquinas) da **100 % < 
 
 ---
 
+## Probado y no publicado: v7l (MobileNetV3‑Large + 6623 fotos de ChessReD recuperadas)
+
+Mismos datos y receta que el v6l, más 4834 fotos de ChessReD (train completo, sin esquinas en el original) recuperadas con `corner_detector.tflite` y verificadas contra su FEN (`chessscan/recover_chessred.py`: ≥ 60/64 casillas de acuerdo con el v6l y ≥ 6 de margen sobre la segunda orientación; en 165 fotos con verdad conocida: 162 aceptadas, 0 con a1 o esquinas mal). Comando en `runs/v7l/COMMAND.txt`.
+
+| Set | v6l | v7l |
+|---|---|---|
+| Físico 132356: 1 cuadro / 1 s / todo · piezas | 88,0 / 89,3 / 92,2 · 65,5 % | 86,0 / 86,9 / 90,6 · 58,4 % |
+| Físico 133425: 1 cuadro / 1 s / todo · piezas | 83,3 / 84,6 / 93,8 · 52,8 % | **85,3 / 86,7 / 95,3 · 57,0 %** |
+| Recall negras 132356 / 133425 (p · r · k) | p 0,66/0,52 · r 0,95/0,92 · k 0,41/0,11 | p 0,46/0,50 · r 0,73/0,94 · k 0,27/0,19 |
+| Libro en el monitor: 1 cuadro / todo | 93,2 / 100 % | 93,8 / 100 % |
+| Tablero ajeno (chesscog real) | **87,7 %** | 84,8 % |
+| ChessReD test | 98,6 % | **99,1 %** |
+| Libros vistos / no vistos · 3D · 2D no visto | 98,5 / 97,8 · 99,5 · 99,0 % | 98,4 / 97,6 · 99,4 · 99,0 % |
+
+**Lectura:** más ChessReD ayuda en ChessReD y en un video, pero empeora en el otro video (sobre todo peones y torres negras) y en el tablero ajeno: el modelo se acerca más al juego de piezas de ChessReD. No supera al v6l en conjunto, así que **`export/` sigue con el v6l**. Para que sume habría que bajarle el peso a ChessReD o sumar piezas físicas variadas.
+
+---
+
 ## Modelo anterior: v5
 
 
