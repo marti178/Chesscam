@@ -39,12 +39,12 @@ class TrainBatches:
     """
 
     def __init__(self, sources: list[tuple[Boards, float]], batch_size: int, steps: int,
-                 seed: int, boards_per_batch: int = 8, geo_px: float = 4.0):
+                 seed: int, boards_per_batch: int = 8, geo_px: float = 4.0, retex: float = 0.0):
         self.sources = sources
         w = np.array([s[1] for s in sources], float)
         self.src_p = w / w.sum()
         self.batch_size, self.steps, self.seed = batch_size, steps, seed
-        self.bpb, self.geo_px = boards_per_batch, geo_px
+        self.bpb, self.geo_px, self.retex = boards_per_batch, geo_px, retex
         lab = np.concatenate([s[0].labels.reshape(-1) for s in sources])
         freq = np.bincount(lab[lab >= 0], minlength=len(g.CLASSES)).astype(float) + 1
         self.class_w = freq ** -0.5
@@ -59,7 +59,7 @@ class TrainBatches:
         for _ in range(self.bpb):
             b = self.sources[rng.choice(len(self.sources), p=self.src_p)][0]
             i = int(rng.integers(len(b)))
-            canon, lab = augment_board(np.asarray(b.canon[i]), b.labels[i], rng, self.geo_px)
+            canon, lab = augment_board(np.asarray(b.canon[i]), b.labels[i], rng, self.geo_px, self.retex)
             xs.append(g.crop_all(canon))
             ys.append(lab)
         x, y = np.concatenate(xs), np.concatenate(ys)

@@ -177,6 +177,9 @@ def main() -> None:
     ap.add_argument("--init", type=Path, help="ajuste fino: partir de este model.keras en vez de ImageNet")
     ap.add_argument("--eval-real", type=Path, nargs="*", default=[], help="otros sets preparados para evaluar (reales, 2D…)")
     ap.add_argument("--val-extra", type=Path, nargs="*", default=[], help="sets extra que se suman a la validación")
+    ap.add_argument("--main-weight", type=float, default=1.0, help="peso de --data en el muestreo")
+    ap.add_argument("--retex", type=float, default=0.0, help="probabilidad del aumento de madera (augment.retexture)")
+    ap.add_argument("--modes", nargs="+", default=["fp32", "fp16", "int8"], help="exportes TFLite a generar")
     a = ap.parse_args()
 
     a.run.mkdir(parents=True, exist_ok=True)
@@ -187,7 +190,7 @@ def main() -> None:
     if a.limit_train:
         train = Boards(train.canon[: a.limit_train], train.labels[: a.limit_train])
     val, test = Boards.load(a.data / "val"), Boards.load(a.data / "test")
-    sources = [(train, 1.0)]
+    sources = [(train, a.main_weight)]
     for spec in a.extra:
         d, w = spec.rsplit(":", 1)
         sources.append((Boards.load(Path(d)), float(w)))
@@ -207,7 +210,7 @@ def main() -> None:
             optimizer=keras.optimizers.AdamW(sched, weight_decay=1e-4),
             loss=keras.losses.SparseCategoricalCrossentropy(from_logits=True),
             metrics=["accuracy"])
-        tb = TrainBatches(sources, a.batch, a.steps, a.seed)
+        tb = TrainBatches(sources, a.batch, a.steps, a.seed, retex=a.retex)
         t0 = time.time()
         hist = model.fit(
             Seq(tb, a.workers), epochs=a.epochs, validation_data=(xv.astype(np.float32), yv),
@@ -240,7 +243,7 @@ def main() -> None:
         res["keras"][d] = metrics(predict_logits(predict, xr), yr)
         print("keras", d, res["keras"][d]["square_acc"])
 
-    for mode in ["fp32", "fp16", "int8"]:
+    for mode in a.modes:
         p = export_tflite(model, a.run, xv[: 64 * 40], mode)
         lt = tflite_predict(p, xt)
         res[f"tflite_{mode}"] = {"bytes": p.stat().st_size, "test": metrics(lt, yt)}

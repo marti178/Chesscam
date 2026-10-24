@@ -68,12 +68,45 @@ def degrade(img: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     return img
 
 
+def retexture(canon: np.ndarray, rng: np.random.Generator) -> np.ndarray:
+    """Pinta las casillas de una paridad (las oscuras el 70 % de las veces) con madera, conservando la luz
+    y las sombras del original. Imita tableros de madera oscura, donde las piezas negras casi no se
+    distinguen de la casilla. Solo cambia los píxeles parecidos al color de esas casillas, así que las
+    piezas quedan como estaban (salvo las del mismo color que la casilla, que es justo el caso difícil)."""
+    x = canon.astype(np.float32)
+    c = [x[g.MY + r * g.S + 12:g.MY + r * g.S + 20, g.MX + k * g.S + 12:g.MX + k * g.S + 20].reshape(-1, 3)
+         for r in range(8) for k in range(8)]
+    par = np.array([(i // 8 + i % 8) % 2 for i in range(64)])
+    med = [np.median(np.concatenate([c[i] for i in range(64) if par[i] == q]), 0) for q in (0, 1)]
+    dark = int(med[1].mean() < med[0].mean())
+    q = dark if rng.random() < 0.7 else 1 - dark
+    m = med[q]
+    tau = 0.3 * np.linalg.norm(med[0] - med[1]) + 12
+    near = (np.linalg.norm(x - m, axis=2) < tau).astype(np.float32)
+    rect = np.zeros(x.shape[:2], np.float32)
+    for i in np.flatnonzero(par == q):
+        r, k = divmod(i, 8)
+        rect[g.MY + r * g.S:g.MY + (r + 1) * g.S, g.MX + k * g.S:g.MX + (k + 1) * g.S] = 1
+    mask = cv2.GaussianBlur(near * rect, (0, 0), 1.0)[..., None]
+    v = rng.uniform(30, 105) if q == dark else rng.uniform(140, 220)
+    tone = np.array([1.0, rng.uniform(0.68, 0.85), rng.uniform(0.48, 0.7)]) if q == dark else np.array([1.0, rng.uniform(0.82, 0.93), rng.uniform(0.62, 0.8)])
+    h, w = x.shape[:2]
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    a = rng.uniform(0, np.pi)
+    noise = cv2.resize(rng.normal(0, 1, (h // 16 + 1, w // 16 + 1)).astype(np.float32), (w, h))
+    grain = 1 + rng.uniform(0.02, 0.08) * np.sin(2 * np.pi * (np.cos(a) * xx + np.sin(a) * yy) / rng.uniform(10, 30) + 4 * noise) + 0.04 * noise
+    new = x / np.maximum(m.mean(), 1) * (v * tone / tone.mean()) * grain[..., None]
+    return np.clip(x * (1 - mask) + new * mask, 0, 255).astype(np.uint8)
+
+
 def augment_board(canon: np.ndarray, labels: np.ndarray, rng: np.random.Generator,
-                  geo_px: float = 4.0) -> tuple[np.ndarray, np.ndarray]:
+                  geo_px: float = 4.0, retex: float = 0.0) -> tuple[np.ndarray, np.ndarray]:
     """Devuelve (canónica aumentada, etiquetas [64] ajustadas)."""
     if rng.random() < 0.5:  # espejo del tablero entero: col -> 7-col
         canon = canon[:, ::-1].copy()
         labels = labels.reshape(8, 8)[:, ::-1].reshape(64)
+    if retex and rng.random() < retex:  # solo si se pide (los modelos anteriores no lo usan)
+        canon = retexture(canon, rng)
     canon = jitter_geometry(canon, rng, geo_px)
     canon = photometric(canon, rng)
     canon = degrade(canon, rng)
