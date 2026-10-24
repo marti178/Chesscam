@@ -2,7 +2,27 @@
 
 Fecha: 23‑10‑2026. Todo lo de esta página se midió en esta PC, salvo lo que se marca como medido por otro. Si algo no se midió, se dice.
 
-## Modelos entregados: v5 (Small) y v6l (Large), a elegir en la app
+## Large publicado: v8l (24‑10‑2026; reemplaza al v6l en `chess_square_classifier_large*.tflite`)
+
+MobileNetV3‑Large, contrato v1 y v1.1 (con embedding de 960). Mismos datos que el v6l más **variedad de piezas**: ChessSight (8000 renders con varios juegos y materiales), acapitani (1737 fotos reales), dopaul (216) y Roboflow (113), con las cajas pasadas a casillas con el detector de esquinas y validadas por ocupación (`chessscan.prepare_boxes`); ChessReD con el peso limitado (0,5 + 0,3 del recuperado) para no repetir lo del v7l; aumento nuevo de madera sobre una de las paridades de casillas (`augment.retexture`, p = 0,3). 24 épocas × 1000 lotes, 6 h 15 min en CPU. Todo en `run_v8l.py`.
+
+| Set (casillas %, 1 cuadro salvo indicación) | v6l | **v8l** |
+|---|---|---|
+| Físico 132356: 1 cuadro / 1 s / todo · piezas | 88,0 / 89,3 / 92,2 · 65,5 | **89,0 / 90,0 / 92,2 · 68,0** |
+| Físico 133425: 1 cuadro / 1 s / todo · piezas | 83,3 / 84,6 / 93,8 · 52,8 | **86,1 / 87,7 / 93,8 · 59,7** |
+| Libro en el monitor: 1 cuadro / todo | 93,2 / 100 | **94,2** / 100 |
+| Alekhine · 2D real | 100 · 100 | 100 · 100 |
+| Libros sintéticos vistos / no vistos | 98,5 / 97,8 | **98,6 / 98,0** |
+| Tablero ajeno (chesscog real) | 87,7 | **91,2** |
+| ChessReD test | 98,6 | **99,6** |
+| 2D no visto · 3D sintético | 99,0 · **99,5** | **99,2** · 99,2 |
+| Tests nuevos: acapitani / dopaul / Roboflow (piezas) | 98,8 / 85,2 / 92,9 (96,9 / 62,4 / 80,2) | **99,1 / 94,7 / 99,8 (97,7 / 87,3 / 99,4)** |
+
+Regla de publicación: gana en físico y no pierde más de 0,5 en ningún bloque (lo único que baja es el 3D sintético, −0,3). Salvedad: en 133425 empeoran el rey y el caballo negros (recall 0,11 → 0,04 y 0,23 → 0,03), aunque las piezas suben en total; los alfiles y damas negras de ese video siguen en ~0. Las salidas doradas del Large (`output_logits_large_f32.bin`, `output_embedding_large_f32.bin`) son del v8l.
+
+---
+
+## Modelos entregados antes del 24‑10: v5 (Small) y v6l (Large) — el Large ahora es el v8l (arriba)
 
 | Archivo en `export/` | Modelo | Tamaño | Latencia en esta PC, lote 64, 4 / 1 hilos |
 |---|---|---|---|

@@ -134,6 +134,8 @@ python -m chessscan.pipeline --run runs/v5 --data data/prepared --init runs/v4/m
   --eval-real data/real/video4 data/real/video5 data/real/video6book_test data/real/video2 data/prepared_book_real/test
 ```
 
+**v8l** (Large publicado desde el 24‑10‑2026): `python run_v8l.py` entrena, exporta con embedding y evalúa en serie; si se corta se relanza igual y sigue (pasos hechos se saltean, `BackupAndRestore` en el entrenamiento). Datos nuevos: `python -m chessscan.prepare_chesssight --out data/prepared_chesssight` y `python -m chessscan.prepare_boxes --src {acapitani,dopaul,francesco} --out data/prepared_<src>`.
+
 **v6l** (MobileNetV3‑Large, mismos datos que el v5, reanudable): el comando exacto está en `runs/v6l/COMMAND.txt` (`--arch mnv3l --epochs 10 --steps 1000 --lr 2e-3`). Si se corta, se relanza el mismo comando y sigue desde la última época (`BackupAndRestore`).
 
 Con datos reales propios (recomendado; mezcla 1 tablero real cada ~3 sintéticos):
@@ -187,6 +189,6 @@ El entrenamiento es reanudable (`BackupAndRestore`): si se corta, se relanza el 
 
 ```
 python -m chessscan.export_embed --model runs/v5/model_calibrated.keras --out export/chess_square_classifier_emb.tflite
-python -m chessscan.export_embed --model runs/v6l/model_calibrated.keras --out export/chess_square_classifier_large_emb.tflite
+python -m chessscan.export_embed --model runs/v8l/model_calibrated.keras --out export/chess_square_classifier_large_emb.tflite
 python -m chessscan.knn_memory --model export/chess_square_classifier_emb.tflite --out runs/knn_small.json
 ```

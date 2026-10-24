@@ -157,7 +157,7 @@ Archivos aparte; los de v1 no cambian:
 | Archivo | Modelo | Salidas |
 |---|---|---|
 | `chess_square_classifier_emb.tflite` | v5 Small | `logits` [64,13] + `embedding` [64,**576**] |
-| `chess_square_classifier_large_emb.tflite` | v6l Large | `logits` [64,13] + `embedding` [64,**960**] |
+| `chess_square_classifier_large_emb.tflite` | v8l Large | `logits` [64,13] + `embedding` [64,**960**] |
 
 - Entrada idéntica a §4. `logits` es **bit a bit igual** a la del modelo v1 correspondiente (verificado con los 3 casos dorados).
 - `embedding`: vector después del GlobalAveragePooling y antes de dropout/densa, **ya normalizado L2** (norma 1 ± 1e‑6). La similitud coseno es el producto escalar.
