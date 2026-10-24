@@ -22,6 +22,22 @@ Regla de publicación: gana en físico y no pierde más de 0,5 en ningún bloque
 
 ---
 
+## Tablero nuevo del usuario (nogal y arce, Staunton de nogal) y v9l (probado, no publicado)
+
+Dos videos de WhatsApp (478×850) con la misma posición desde otros ángulos, autoetiquetados con `chessscan.autolabel_detector` (esquinas del detector + orientación por el clasificador, margen ≥ 6); FEN y orientación verificados a ojo. 21.54.59 → `video7` (576 cuadros, train del v9l); 21.55.05 → `video8` (1039 cuadros, solo test). La posición no tiene alfiles ni caballos blancos.
+
+| | v8l (publicado) | v9l (v8l + video7, 4 épocas, lr 5e‑4) |
+|---|---|---|
+| 21.55.05 (test): 1 cuadro / 1 s / todo · piezas | 88,4 / 89,8 / 90,6 · 42,5 % | **91,5 / 93,1 / 100 · 56,3 %** |
+| ↳ alfil n · caballo n · rey B / n · torre B / n · dama n | 0,24 · 0,78 · 0,17 / 0,04 · 0,21 / 0,21 · 0,47 | 0,63 · 0,72 · 0,38 / 0,21 · 0,25 / 0,20 · 0,85 |
+| Físico 132356 · 133425 (1 cuadro) | **89,0 · 86,1** | 88,2 · 85,1 |
+| Libro en el monitor | **94,2** | 93,3 |
+| dopaul · resto del test fijo | **94,7** · = | 94,1 · ± 0,1 |
+
+**No se publica:** gana mucho en el tablero nuevo, pero pierde más de 0,5 en los videos físicos viejos, el libro y dopaul. Con un solo video de una sola posición se acomoda a esas piezas. Hace falta más variedad del tablero nuevo (otras posiciones, sobre todo con alfiles y caballos blancos) o mezclarlo con menos peso. Salvedad: la orientación de los cuadros la eligió el v8l, lo que puede favorecerlo un poco en estos videos.
+
+---
+
 ## Modelos entregados antes del 24‑10: v5 (Small) y v6l (Large) — el Large ahora es el v8l (arriba)
 
 | Archivo en `export/` | Modelo | Tamaño | Latencia en esta PC, lote 64, 4 / 1 hilos |
