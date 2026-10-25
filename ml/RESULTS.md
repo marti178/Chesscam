@@ -42,6 +42,19 @@ Mismas métricas que el clasificador, con las mismas esquinas y etiquetas (casil
 
 **Recomendación:** probarlo en la app para piezas físicas, en lugar del clasificador o junto a él, y mantener el clasificador para libros y pantallas.
 
+### Fusión calibrada del detector (CONTRACT_DETECTOR v1.1)
+
+Casillas % con 1 cuadro / 0,5 s (30) / 1 s (60) / todo el video · piezas % con 1 s. Validación cruzada: los parámetros de cada fila se ajustaron sin ese video.
+
+| Video | Sin calibrar (v1) | **Calibrado** |
+|---|---|---|
+| Físico 132356 | 93,1 / 91,8 / 91,5 / 92,2 · 74,9 | **93,2 / 93,6 / 93,4 / 95,3 · 81,0** |
+| Físico 133425 | 94,3 / 93,5 / 93,4 / 96,9 · 80,7 | **94,3 / 95,2 / 95,5 / 98,4 · 87,2** |
+| Tablero nuevo 21.55.05 | 98,8 / 98,9 / 98,8 / 100,0 · 93,7 | **98,8 / 99,1 / 99,1 / 100,0 · 96,7** |
+| Libro en el monitor | 92,1 / 91,0 / 91,5 / 100,0 · 81,9 | **92,2 / 92,9 / 93,6 / 100,0 · 86,4** |
+
+Con la conversión vieja, fusionar empeoraba (−1 a −2 puntos): una casilla sin detección pesaba como «vacía al 95 %» y los cuadros con oclusiones arrastraban. Calibrada, la fusión **siempre suma**: +0,3 a +3,1 puntos con 1 s y +1,5 a +3,1 con todo el video en físico, y un cuadro solo queda igual o mejor. Parámetros: a = 1,205, b = 0,299, e = 0,247, π0 = 0,9931. Salvedad: con un sesgo por clase (12 parámetros) la fusión mejoraba más en un video, pero cambiaba las decisiones de un cuadro y en 132356 perdía 3 puntos; se descartó.
+
 ---
 
 ## Tablero nuevo del usuario (nogal y arce, Staunton de nogal) y v9l (probado, no publicado)

@@ -1,4 +1,4 @@
-# Contrato del detector de piezas — v1
+# Contrato del detector de piezas — v1.1 (fusión calibrada)
 
 Alternativa al clasificador de casillas (`CONTRACT.md`): detecta las piezas sobre la foto **sin rectificar** y después las asigna a casillas con la homografía. Usa las mismas 4 esquinas (del detector de esquinas o del OpenCV de la app) en el orden de `CONTRACT.md` §1. Implementación de referencia: `chessscan/det_eval.py` (`prepare`, `decode`, `assign`); caso dorado en `golden/detector_full_1200x800/`.
 
@@ -30,7 +30,12 @@ Alternativa al clasificador de casillas (`CONTRACT.md`): detecta las piezas sobr
 1. Punto de apoyo de cada caja: `((x0 + x1)/2, y1 − 0,35·min(w, h))`, abajo al centro y un poco hacia adentro. En vista lateral cae cerca de la base de la pieza y en vista cenital, cerca del centro.
 2. Proyectarlo con la homografía de `CONTRACT.md` §2: `col = (u − 32)/32`, `fila = (v − 96)/32`. Si no cae en 0 ≤ col, fila < 8, se descarta (pieza capturada fuera del tablero).
 3. Cada casilla se queda con la detección de **mayor `p`**. Las casillas sin detección son `empty`.
-4. Umbral de decisión: con `t = 0,35`, la casilla es la pieza si `p ≥ t`; si no, `empty`. Para la fusión temporal, usar `q = sigmoid(logit(p) − logit(t))` para la clase detectada y `1 − q` repartido (95 % a `empty`). Sin detección: `empty` 0,95. Así se suman log‑probabilidades por casilla física, como con el clasificador.
+4. **Probabilidad por casilla, calibrada** (para un cuadro y para la fusión; parámetros en `export/detector_calibration.json`, referencia `det_calib.logprob`; reemplaza al umbral `t = 0,35` de la v1):
+   - con detección de clase c y confianza p: `q = sigmoid(a · logit(p) + b)`; `P(c) = q`, `P(empty) = (1 − q) · e`, cada una de las otras 11 clases `(1 − q) · (1 − e) / 11`;
+   - sin detección: `P(empty) = π0`, cada una de las 12 piezas `(1 − π0) / 12`;
+   - **a = 1,205, b = 0,299, e = 0,247, π0 = 0,9931** (un mismo `b` para todas las clases; `e` bajo quiere decir que, cuando el detector ve algo y se equivoca de clase, casi siempre hay otra pieza y no una casilla vacía).
+   - Un cuadro: la clase de mayor `P`. Varios cuadros: sumar `log P` por casilla física (como con el clasificador) y tomar el máximo.
+   - Ajuste por máxima verosimilitud en los 3 videos físicos de test (`chessscan/det_calib.py`). Las mejoras de `RESULTS.md` se midieron con validación cruzada, ajustando sin el video que se mide.
 
 El resultado es la misma grilla de 64 casillas en el orden de imagen (fila 0 = la lejana), así que la orientación (a1) y lo que sigue no cambian.
 
