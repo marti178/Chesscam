@@ -22,6 +22,28 @@ Regla de publicación: gana en físico y no pierde más de 0,5 en ningún bloque
 
 ---
 
+## Detector de piezas det_v1 (`export/piece_detector.tflite`, CONTRACT_DETECTOR.md)
+
+YOLO11n (Ultralytics) sobre la foto sin rectificar, recortada al tablero, entrada 512, fp16, 5,4 MB; 25 ms con 4 hilos en esta PC (1 inferencia por cuadro). 14 épocas en CPU (6 h 30 min). Cajas de ChessReD2K, ChessSight, acapitani, dopaul, Roboflow, sintético 2D y de libro (casilla proyectada) y videos de entrenamiento del usuario (cilindros de altura nominal proyectados con la pose de la cámara). Validación: mAP50 0,981, mAP50‑95 0,864.
+
+Mismas métricas que el clasificador, con las mismas esquinas y etiquetas (casillas / piezas por cuadro / casillas fusionando todo el video; recall por cuadro):
+
+| Set | v8l (publicado) | v9l (no publicado) | **det_v1** |
+|---|---|---|---|
+| Físico 132356 | 89,0 / 68,0 / 92,2 · B 0,58 b 0,18 N 0,93 K 0,96 k 0,51 | 88,2 / 65,3 / 92,2 | **93,1 / 80,5** / 92,2 · B 0,39 b 0,21 N 0,85 K 0,99 k 0,72 |
+| Físico 133425 | 86,1 / 59,7 / 93,8 · B 0,57 n 0,03 K 0,88 k 0,04 | 85,1 / 56,8 / 93,8 | **94,3 / 83,8 / 96,9** · B 0,34 n 1,00 K 0,74 k 0,79 |
+| Tablero nuevo 21.55.05 (test) | 88,4 / 42,5 / 90,6 · b 0,24 n 0,78 K 0,17 k 0,04 | 91,5 / 56,3 / 100 · b 0,63 n 0,72 K 0,38 k 0,21 | **98,8 / 95,7 / 100** · b 0,95 n 0,96 K 0,90 k 0,88 |
+| Libro en el monitor | **94,2 / 87,5** / 100 | 93,3 / 85,7 / 100 | 92,1 / 83,1 / 100 |
+| 2D real (Lichess en el monitor) | 100 | 100 | 99,98 |
+| Alekhine | 64/64 | 64/64 | 64/64 |
+| Tablero ajeno (chesscog real) | 91,2 | 91,2 | **96,6** (piezas 92,8) |
+
+**Lectura:** el detector gana con claridad en físico (+4 a +8 puntos de casillas, +12 a +24 de piezas por cuadro), sobre todo en reyes y caballos, y en el tablero ajeno (+5). En el tablero nuevo saca 98,8 / 95,7, pero ojo: como el v9l, entrenó con el otro video de esa misma posición (21.54.59). Sigue flojo en **alfiles** de los videos viejos (0,2–0,4: los confunde con peones) y pierde 2 puntos en el libro. Salvedades: con el detector, la fusión de 1 s no mejora sobre 1 cuadro (la probabilidad armada desde `p` está mal calibrada; a ajustar), y las cajas de los videos de entrenamiento son aproximadas.
+
+**Recomendación:** probarlo en la app para piezas físicas, en lugar del clasificador o junto a él, y mantener el clasificador para libros y pantallas.
+
+---
+
 ## Tablero nuevo del usuario (nogal y arce, Staunton de nogal) y v9l (probado, no publicado)
 
 Dos videos de WhatsApp (478×850) con la misma posición desde otros ángulos, autoetiquetados con `chessscan.autolabel_detector` (esquinas del detector + orientación por el clasificador, margen ≥ 6); FEN y orientación verificados a ojo. 21.54.59 → `video7` (576 cuadros, train del v9l); 21.55.05 → `video8` (1039 cuadros, solo test). La posición no tiene alfiles ni caballos blancos.

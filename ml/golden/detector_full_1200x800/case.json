@@ -1,0 +1,279 @@
+{
+ "source_image": "../full_1200x800/image.png",
+ "corners_TL_TR_BR_BL": [
+  [
+   350.0,
+   237.0
+  ],
+  [
+   805.0,
+   216.0
+  ],
+  [
+   1001.0,
+   627.0
+  ],
+  [
+   241.0,
+   686.0
+  ]
+ ],
+ "letterbox": {
+  "crop_x0": 180,
+  "crop_y0": 51,
+  "s": 0.7264472190692395,
+  "r": 0.8,
+  "pad_x": 0,
+  "pad_y": 65
+ },
+ "input": "input_letterbox_u8.bin: [512,512,3] uint8 RGB; el modelo recibe float32 = valor / 255",
+ "output": "output_f32.bin: [1,16,5376] float32",
+ "conf": 0.1,
+ "iou": 0.6,
+ "t": 0.35,
+ "detections": [
+  {
+   "class": "p",
+   "p": 0.9085,
+   "xyxy": [
+    463.5,
+    430.7,
+    503.3,
+    492.0
+   ]
+  },
+  {
+   "class": "K",
+   "p": 0.9028,
+   "xyxy": [
+    386.4,
+    234.4,
+    446.0,
+    348.3
+   ]
+  },
+  {
+   "class": "p",
+   "p": 0.887,
+   "xyxy": [
+    834.3,
+    355.9,
+    874.9,
+    411.0
+   ]
+  },
+  {
+   "class": "P",
+   "p": 0.8696,
+   "xyxy": [
+    690.7,
+    411.8,
+    729.1,
+    467.3
+   ]
+  },
+  {
+   "class": "P",
+   "p": 0.8671,
+   "xyxy": [
+    817.0,
+    304.2,
+    859.0,
+    361.7
+   ]
+  },
+  {
+   "class": "P",
+   "p": 0.8645,
+   "xyxy": [
+    478.8,
+    324.9,
+    513.6,
+    382.4
+   ]
+  },
+  {
+   "class": "P",
+   "p": 0.8227,
+   "xyxy": [
+    393.6,
+    322.7,
+    427.3,
+    379.0
+   ]
+  },
+  {
+   "class": "p",
+   "p": 0.8205,
+   "xyxy": [
+    287.2,
+    449.1,
+    332.9,
+    517.2
+   ]
+  },
+  {
+   "class": "B",
+   "p": 0.4648,
+   "xyxy": [
+    631.0,
+    323.1,
+    676.5,
+    419.9
+   ]
+  },
+  {
+   "class": "k",
+   "p": 0.3674,
+   "xyxy": [
+    634.0,
+    364.2,
+    692.9,
+    474.9
+   ]
+  },
+  {
+   "class": "k",
+   "p": 0.3375,
+   "xyxy": [
+    653.7,
+    158.5,
+    695.6,
+    252.9
+   ]
+  }
+ ],
+ "squares": [
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "K",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "P",
+  "P",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "P",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "B",
+  "empty",
+  "empty",
+  "p",
+  "p",
+  "empty",
+  "p",
+  "empty",
+  "k",
+  "P",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty"
+ ],
+ "true_labels": [
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "b",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "K",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "P",
+  "P",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "P",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "B",
+  "empty",
+  "empty",
+  "p",
+  "p",
+  "empty",
+  "p",
+  "empty",
+  "k",
+  "P",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty",
+  "empty"
+ ],
+ "matches_truth": 63
+}

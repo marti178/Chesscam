@@ -7,8 +7,8 @@ mayor ≤ 640), detección con NMS agnóstica, punto de apoyo de cada caja (abaj
 confianza. Para fusionar se arma una probabilidad por casilla: con detección de confianza p,
 q = sigmoid(logit(p) − logit(t)) para su clase y el resto para «vacía»; sin detección, «vacía» 0,95.
 
-Corre en el entorno de Ultralytics (.venv-yolo):
-  python -m chessscan.det_eval --model runs/det_v1/weights/best.pt --out runs/det_v1/eval.json
+Con un .pt corre en el entorno de Ultralytics (.venv-yolo); con el .tflite, en el de TensorFlow (.venv):
+  python -m chessscan.det_eval --model export/piece_detector.tflite --out runs/det_v1/eval.json
 """
 from __future__ import annotations
 
@@ -21,7 +21,8 @@ import numpy as np
 
 from . import geometry as g
 
-MAX = 640
+MAX = 640  # lado mayor del recorte antes del letterbox
+IN = 512   # entrada del modelo (det_v1)
 RAW = Path("data/raw/user_video")
 VIDEOS = {  # nombre: (carpeta autoetiquetada, cuadros originales, tramo)
     "132356": ("data/real/video4", RAW / "VID_20261022_132356_720.npy", None),
@@ -56,11 +57,63 @@ class Detector:
         s = min(1.0, MAX / max(crop.shape[:2]))
         if s < 1:
             crop = cv2.resize(crop, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
-        r = self.m.predict(crop[..., ::-1], imgsz=MAX, conf=self.conf, iou=self.iou, agnostic_nms=True, verbose=False)[0]
+        r = self.m.predict(crop[..., ::-1], imgsz=IN, conf=self.conf, iou=self.iou, agnostic_nms=True, verbose=False)[0]
         out = []
         for (x0, y0, x1, y1), c, p in zip(r.boxes.xyxy.numpy(), r.boxes.cls.numpy(), r.boxes.conf.numpy()):
             out.append((int(c) + 1, float(p), x0 / s + X0, y0 / s + Y0, x1 / s + X0, y1 / s + Y0))
         return out
+
+
+class TFLiteDetector:
+    """Referencia de CONTRACT_DETECTOR.md: recorte → letterbox a IN×IN (gris 114, centrado) → modelo →
+    decodificación [1, 4 + 12, N] (xywh normalizados a la entrada) → NMS agnóstica → píxeles originales."""
+
+    def __init__(self, model: Path, conf: float, iou: float, threads: int = 8):
+        import tensorflow as tf
+        self.it = tf.lite.Interpreter(model_path=str(model), num_threads=threads)
+        self.it.allocate_tensors()
+        self.inp = self.it.get_input_details()[0]["index"]
+        self.out = self.it.get_output_details()[0]["index"]
+        self.conf, self.iou = conf, iou
+
+    def __call__(self, rgb: np.ndarray, corners: np.ndarray):
+        lb, meta = prepare(rgb, corners)
+        self.it.set_tensor(self.inp, lb[None].astype(np.float32) / 255)
+        self.it.invoke()
+        return decode(self.it.get_tensor(self.out)[0], meta, self.conf, self.iou)
+
+
+def prepare(rgb: np.ndarray, corners: np.ndarray):
+    """Imagen original + esquinas → entrada letterbox uint8 [IN, IN, 3] y lo necesario para deshacerla."""
+    h, w = rgb.shape[:2]
+    X0, Y0, X1, Y1 = crop_box(corners, w, h)
+    crop = rgb[Y0:Y1, X0:X1]
+    s = min(1.0, MAX / max(crop.shape[:2]))
+    if s < 1:
+        crop = cv2.resize(crop, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
+    ch, cw = crop.shape[:2]
+    r = min(IN / ch, IN / cw)
+    nw, nh = round(cw * r), round(ch * r)
+    x0i, y0i = round((IN - nw) / 2 - 0.1), round((IN - nh) / 2 - 0.1)
+    lb = np.full((IN, IN, 3), 114, np.uint8)
+    lb[y0i:y0i + nh, x0i:x0i + nw] = cv2.resize(crop, (nw, nh), interpolation=cv2.INTER_LINEAR)
+    return lb, {"crop_x0": X0, "crop_y0": Y0, "s": s, "r": r, "pad_x": x0i, "pad_y": y0i}
+
+
+def decode(y: np.ndarray, meta: dict, conf: float, iou: float):
+    """Salida [4 + 12, N] (cx, cy, w, h normalizados a la entrada; 12 puntajes) → NMS agnóstica →
+    [(clase 1..12, p, x0, y0, x1, y1)] en píxeles de la imagen original."""
+    cls, p = y[4:].argmax(0), y[4:].max(0)
+    keep = p >= conf
+    b = y[:4, keep].T * IN
+    cls, p = cls[keep], p[keep]
+    xyxy = np.stack([b[:, 0] - b[:, 2] / 2, b[:, 1] - b[:, 3] / 2, b[:, 0] + b[:, 2] / 2, b[:, 1] + b[:, 3] / 2], 1)
+    idx = cv2.dnn.NMSBoxes([[float(v) for v in (q[0], q[1], q[2] - q[0], q[3] - q[1])] for q in xyxy], p.tolist(), conf, iou, top_k=300)
+    k = meta["r"] * meta["s"]
+    fx = lambda v: (v - meta["pad_x"]) / k + meta["crop_x0"]
+    fy = lambda v: (v - meta["pad_y"]) / k + meta["crop_y0"]
+    return [(int(cls[i]) + 1, float(p[i]), fx(xyxy[i, 0]), fy(xyxy[i, 1]), fx(xyxy[i, 2]), fy(xyxy[i, 3]))
+            for i in np.array(idx).reshape(-1)]
 
 
 def assign(dets, corners, t: float) -> np.ndarray:
@@ -134,7 +187,7 @@ def main() -> None:
     ap.add_argument("--every", type=int, default=1, help="1 de cada N cuadros de video")
     ap.add_argument("--sets", nargs="*", default=list(VIDEOS) + list(STATIC))
     a = ap.parse_args()
-    det = Detector(a.model, a.conf, a.iou)
+    det = TFLiteDetector(a.model, a.conf, a.iou) if a.model.suffix == ".tflite" else Detector(a.model, a.conf, a.iou)
     res = {}
     for name in a.sets:
         if name in VIDEOS:

@@ -192,3 +192,13 @@ python -m chessscan.export_embed --model runs/v5/model_calibrated.keras --out ex
 python -m chessscan.export_embed --model runs/v8l/model_calibrated.keras --out export/chess_square_classifier_large_emb.tflite
 python -m chessscan.knn_memory --model export/chess_square_classifier_emb.tflite --out runs/knn_small.json
 ```
+
+## Detector de piezas (det_v1, CONTRACT_DETECTOR.md)
+
+```
+python -m chessscan.det_data --out data/det           # en .venv (usa el detector de esquinas)
+.venv-yolo\Scripts\python.exe run_det.py               # YOLO11n, 14 épocas a 512, reanudable
+.venv-export\Scripts\python.exe -c "from ultralytics import YOLO; YOLO('runs/det_v1/weights/best.pt').export(format='tflite', imgsz=512, half=True)"
+.venv-export\Scripts\python.exe -m chessscan.det_eval --model export/piece_detector.tflite --out runs/det_v1/eval.json
+```
+Entornos: `.venv-yolo` (ultralytics 8.3.40, torch 2.5.1 CPU, numpy 1.26.4, opencv 4.10, pandas 2.2.3) y `.venv-export` (lo mismo más tensorflow‑cpu 2.19, onnx2tf 1.26.3 y python‑chess).

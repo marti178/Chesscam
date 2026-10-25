@@ -9,7 +9,7 @@ import pytest
 from chessscan import geometry as g
 
 GOLDEN = Path(__file__).resolve().parents[1] / "golden"
-CASES = sorted(p for p in GOLDEN.iterdir() if (p / "case.json").exists())
+CASES = [c for c in sorted(p for p in GOLDEN.iterdir() if (p / "case.json").exists()) if not c.name.startswith("detector")]
 
 
 def rgb(p):
@@ -52,3 +52,28 @@ def test_model_output(case, variant):
     want = np.fromfile(case / variant[1], "<f4").reshape(64, len(g.CLASSES))
     assert (got.argmax(1) == want.argmax(1)).all()
     assert np.abs(got - want).max() <= 0.1
+
+
+DET = GOLDEN / "detector_full_1200x800"
+
+
+def test_detector_golden():
+    model = GOLDEN.parent / "export" / "piece_detector.tflite"
+    if not (DET / "output_f32.bin").exists() or not model.exists():
+        pytest.skip("falta el detector o su caso dorado")
+    import tensorflow as tf
+    from chessscan.det_eval import assign, decode, prepare
+    case = json.loads((DET / "case.json").read_text())
+    img = rgb(DET / case["source_image"])
+    c = np.array(case["corners_TL_TR_BR_BL"], float)
+    lb, meta = prepare(img, c)
+    assert (lb == np.fromfile(DET / "input_letterbox_u8.bin", np.uint8).reshape(lb.shape)).all()
+    it = tf.lite.Interpreter(model_path=str(model), num_threads=2)
+    it.allocate_tensors()
+    it.set_tensor(it.get_input_details()[0]["index"], lb[None].astype(np.float32) / 255)
+    it.invoke()
+    y = it.get_tensor(it.get_output_details()[0]["index"])
+    want = np.fromfile(DET / "output_f32.bin", "<f4").reshape(y.shape)
+    assert np.abs(y - want).max() < 1e-3
+    labels = assign(decode(y[0], meta, case["conf"], case["iou"]), c, case["t"]).argmax(-1)
+    assert [g.CLASSES[k] for k in labels] == case["squares"]

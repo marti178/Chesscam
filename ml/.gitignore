@@ -8,3 +8,4 @@ res_jobs.py
 .venv-render/
 .venv-chesscog/
 .venv-yolo/
+.venv-export/
